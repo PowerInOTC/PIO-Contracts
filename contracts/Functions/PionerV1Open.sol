@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.20;
-// LICENSE.txt at : https://www.pioner.io/license
 
 import "../PionerV1.sol";
 import "./PionerV1Compliance.sol";
@@ -12,6 +11,11 @@ import "hardhat/console.sol";
 contract PionerV1Open {
     PionerV1 private pnr;
     PionerV1Compliance private kyc;
+
+    event openQuoteEvent( address indexed target,uint256 indexed bContractId, bool isLong, uint256 bOracleId, uint256 price, uint256 qty, uint256 interestRate, bool isAPayingAPR); 
+    event acceptQuoteEvent( address indexed target, uint256 indexed bContractId, uint256 price); 
+    event cancelOpenQuoteEvent( uint256 indexed bContractId );
+    event deployBContract(uint256 indexed bOracleId);
 
     constructor(address _pionerV1, address _pionerV1Compliance) {
         pnr = PionerV1(_pionerV1);
@@ -49,7 +53,7 @@ contract PionerV1Open {
         bO.timeLockA = _timeLockA;
         bO.timeLockB = _timeLockB;
         bO.cType = _cType;
-        //emit deployPriceFeedEvent(pnr.getBOracleLength());
+        emit deployBContract(pnr.getBOracleLength());
         pnr.setBOracle(pnr.getBOracleLength(), bO);
         pnr.addBOracleLength();
     }
@@ -120,12 +124,13 @@ contract PionerV1Open {
             bC.pB = msg.sender;
         }   
 
-        //emit openQuoteEvent( msg.sender, pnr.getBContractLength(), isLong, bOracleId, price, qty, interestRate, isAPayingAPR);
+        emit openQuoteEvent( msg.sender, pnr.getBContractLength(), isLong, bOracleId, price, qty, interestRate, isAPayingAPR);
         pnr.setBContract(pnr.getBContractLength(), bC);
         pnr.addBContractLength();
         pnr.addOpenPositionNumber(msg.sender);
         pnr.updateCumIm(bO, bC, pnr.getBContractLength() - 1);
     }
+
 
     function acceptQuote(uint256 bContractId, uint256 _acceptPrice, address backendAffiliate) public {
         console.log("accept Quote");
@@ -155,7 +160,7 @@ contract PionerV1Open {
                 
 
                 }
-            //emit acceptQuoteEvent(msg.sender, _bContractId, pairContractId, _acceptPrice);
+            emit acceptQuoteEvent(msg.sender, bContractId, _acceptPrice);
         } else if (bC.state == utils.cState.Quote){
             if (bC.initiator == bC.pA){
                 bC.price = _acceptPrice;
@@ -181,9 +186,11 @@ contract PionerV1Open {
             pnr.addOpenPositionNumber(msg.sender);
             pnr.setBContract(bContractId, bC);
             pnr.updateCumIm(bO, bC, bContractId);
-            //emit acceptQuoteEvent(msg.sender, _bContractId, pairContractId, _acceptPrice);
+            emit acceptQuoteEvent(msg.sender, bContractId, _acceptPrice);
         }
     }
+    
+
 
     function cancelOpenQuote( uint256 bContractId) public{
         utils.bContract memory bC = pnr.getBContract(bContractId);
@@ -204,7 +211,7 @@ contract PionerV1Open {
         }
         pnr.setBContract(bContractId, bC);
         pnr.updateCumIm(bO, bC, bContractId);
-        //emit cancelOpenQuoteEvent(bContractId );
+        emit cancelOpenQuoteEvent(bContractId );
     }
 
 }

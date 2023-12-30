@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.20;
-// LICENSE.txt at : https://www.pioner.io/license
 
 import "hardhat/console.sol";
 
@@ -98,30 +97,30 @@ library PionerV1Utils {
         }
     }
 
-// return true if negative
-function calculateuPnl(uint256 price, uint256 lastPrice, uint256 qty, uint256 interestRate, uint256 lastPriceUpdateTime, bool isPayingIr) public view returns (uint256, bool) {
-    uint256 ir = calculateIr(interestRate, (block.timestamp - lastPriceUpdateTime), lastPrice, qty);
-    uint256 pnl;
-    if (lastPrice >= price) {
-        pnl = ((lastPrice - price) * qty) / 1e18;
-        if (isPayingIr) {
-            if (pnl >= ir) {
-                return (pnl - ir, false);
+    // return true if negative
+    function calculateuPnl(uint256 price, uint256 lastPrice, uint256 qty, uint256 interestRate, uint256 lastPriceUpdateTime, bool isPayingIr) public view returns (uint256, bool) {
+        uint256 ir = calculateIr(interestRate, (block.timestamp - lastPriceUpdateTime), lastPrice, qty);
+        uint256 pnl;
+        if (lastPrice >= price) {
+            pnl = ((lastPrice - price) * qty) / 1e18;
+            if (isPayingIr) {
+                if (pnl >= ir) {
+                    return (pnl - ir, false);
+                } else {
+                    return (ir - pnl, true);
+                }
             } else {
-                return (ir - pnl, true);
+                return (pnl + ir, false);
             }
         } else {
-            return (pnl + ir, false);
-        }
-    } else {
-        pnl = ((price - lastPrice) * qty) / 1e18;
-        if (isPayingIr) {
-            return (pnl - ir, true);
-        } else {
-            return (pnl + ir, true);
+            pnl = ((price - lastPrice) * qty) / 1e18;
+            if (isPayingIr) {
+                return (pnl - ir, true);
+            } else {
+                return (pnl + ir, true);
+            }
         }
     }
-}
 
 
     function calculateIr( uint256 rate, uint256 time, uint256 price, uint256 qty) public pure returns(uint256){

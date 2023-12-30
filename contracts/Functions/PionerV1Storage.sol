@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.20;
-// LICENSE.txt at : https://www.pioner.io/license
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -76,6 +75,8 @@ contract PionerV1Storage{
     event AddToOwedEvent(address indexed target, address indexed receiver, uint256 deficit);
     event ClaimOwedEvent(address indexed target, address indexed receiver, uint256 amount);
     event deployPriceFeedEvent(uint256 indexed bOracleLength);
+    event updatePricePythEvent(uint256 indexed bOracleId, uint256 lastPrice);
+
 
 // Stablecoin Module
     mapping(address => uint256) bOracleIdStable; // kyc
@@ -85,6 +86,8 @@ contract PionerV1Storage{
     mapping( address => mapping( uint256 => uint256)) bContractImBalances;
 
 // Read only functions
+
+    
 
     function getBContract(uint256 id) external view returns (utils.bContract memory) {
              return bContracts[id];
@@ -164,6 +167,16 @@ contract PionerV1Storage{
     function getBalance(address user) external view returns (uint256) {
         return balances[user];
     }
+/*
+    function getBalance(address user) external view returns (uint256) {
+        uint256 _mintValue = kyc.getMintValue;
+        if( balances[user]  > _mintValue ){
+            return (balances[user] - _mintValue);
+        }
+        else{
+            return( 0 );
+        }
+    }*/
 
      function getBalances(address user, address user2, address user3) external view returns (uint256,uint256,uint256) {
         return (balances[user] / 1e18,balances[user2]/ 1e18,balances[user3]/ 1e18);
@@ -309,24 +322,16 @@ contract PionerV1Storage{
     }
 
     function decreaseTotalOwedAmountPaid(address user, uint256 amount) external onlyContracts {
-        totalOwedAmounts[user] -= amount;
+        totalOwedAmountPaids[user] -= amount;
     }
 
     function setTotalOwedAmount(address user, uint256 amount) external onlyContracts {
         totalOwedAmountPaids[user] = amount;
     }
 
-    function decreaseTotalOwedAmount(address user, uint256 amount) external onlyContracts {
-        totalOwedAmountPaids[user] -= amount;
-    }
-
-    function setMinimumOpenPartialFillNotional(address user, uint256 amount) external onlyContracts {
-        minimumOpenPartialFillNotional[user] = amount;
-    }
-
-    function setSponsorReward(address user, uint256 amount) external onlyContracts {
-        sponsorReward[user] = amount;
-    }
+        function decreaseTotalOwedAmount(address user, uint256 amount) external onlyContracts {
+            totalOwedAmounts[user] -= amount;
+        }
 
     function setbOracleIdStable(address kyc, uint256 _id) external onlyContracts {
         require( bOracleIdStable[kyc] == 0);

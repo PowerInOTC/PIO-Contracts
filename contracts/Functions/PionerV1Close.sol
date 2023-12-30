@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.20;
 // LICENSE.txt at : https://www.pioner.io/license
 
@@ -11,6 +11,12 @@ import "hardhat/console.sol";
 contract PionerV1Close {
     PionerV1 private pnr;
     PionerV1Compliance private kyc;
+
+    event openCloseQuoteEvent( address indexed target, uint256 indexed bCloseQuoteId, uint256[] bOracleids, uint256[] price, uint256[] qty, uint256[] limitOrStop, uint256[] expiration);
+    event acceptCloseQuoteEvent( address indexed target, uint256 indexed bCloseQuoteId, uint256 index, uint256 amount );
+    event expirateBContractEvent(uint256 indexed bContractId);
+    event closeMarketEvent( address indexed target, uint256 indexed bCloseQuoteId, uint256 index);
+    event cancelOpenCloseQuoteContractEvent(uint256 indexed bContractId);
 
     constructor(address _pionerV1, address _pionerV1Compliance) {
         pnr = PionerV1(_pionerV1);
@@ -51,8 +57,10 @@ contract PionerV1Close {
         );
         pnr.setBCloseQuote(pnr.getBCloseQuoteLength(), newQuote);
         pnr.addBCloseQuoteLength();
-        //emit openCloseQuoteEvent(msg.sender, getBCloseQuoteLength()--, bContractIds, price, qty, limitOrStop, expiration );
+        emit openCloseQuoteEvent(msg.sender, pnr.getBCloseQuoteLength() - 1, bContractIds, price, qty, limitOrStop, expiry );
     }
+
+
     
     function acceptCloseQuote( uint256 bCloseQuoteId, uint256 index, uint256 amount ) public {
         utils.bCloseQuote memory _bCloseQuote = pnr.getBCloseQuote(bCloseQuoteId);
@@ -95,8 +103,9 @@ contract PionerV1Close {
         pnr.setBCloseQuote(bCloseQuoteId, _bCloseQuote);
         pnr.updateCumIm(bO, bC, _bCloseQuote.bContractIds[index]);
 
-        //_bOracleemit acceptCloseQuoteEvent( msg.sender, bCloseQuoteId, index, amount );
-    }
+        emit acceptCloseQuoteEvent( msg.sender, bCloseQuoteId, index, amount );
+    }    
+
     
     function closeMarket(uint256 bCloseQuoteId, uint256 index) public {
         utils.bCloseQuote memory _bCloseQuote = pnr.getBCloseQuote(bCloseQuoteId);
@@ -126,7 +135,7 @@ contract PionerV1Close {
         _bCloseQuote.qty[index] = 0;
         pnr.setBCloseQuote(bCloseQuoteId, _bCloseQuote);
         pnr.updateCumIm(bO, bC, _bCloseQuote.bContractIds[index]);
-        //emit closeMarketEvent( msg.sender, bCloseQuoteId, index);
+        emit closeMarketEvent( msg.sender, bCloseQuoteId, index);
   }
 
     function expirateBContract( uint256 bContractId) public { 
@@ -147,7 +156,7 @@ contract PionerV1Close {
           closePosition(bC, bO, bContractId, uPnl, isNegative, bC.qty);
       }
       pnr.updateCumIm(bO, bC, bContractId);
-      //emit expirateBContractEvent(bContractId);
+      emit expirateBContractEvent(bContractId);
   }    
 
     // case where Oracle not update for 7 days
@@ -166,7 +175,7 @@ contract PionerV1Close {
           closePosition(bC, bO, bContractId, uPnl, isNegative, bC.qty);
       }
       pnr.updateCumIm(bO, bC, bContractId);
-      //emit expirateBContractEvent(bContractId);
+      emit expirateBContractEvent(bContractId);
   }    
 
   function closePosition(utils.bContract memory bC, utils.bOracle memory bO, uint256 bContractId, uint256 toPay, bool isNegative, uint256 amount) internal{ 
@@ -215,7 +224,7 @@ contract PionerV1Close {
         _bCloseQuote.state = utils.cState.Canceled;
         _bCloseQuote.cancelTime = block.timestamp;
         pnr.setBCloseQuote(bCloseQuoteId, _bCloseQuote);
-        //emit cancelOpenCloseQuoteContractIdEvent(contractId);
+        emit cancelOpenCloseQuoteContractEvent(bCloseQuoteId);
     }
 
 }

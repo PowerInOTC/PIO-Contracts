@@ -1,14 +1,16 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.20;
-// LICENSE.txt at : https://www.pioner.io/license
 
 import "../PionerV1.sol";
+import "../Functions/PionerV1Compliance.sol";
 
-contract View {
-    PionerV1 pnr;
+contract PionerV1View {
+    PionerV1 private pnr;
+    PionerV1Compliance private kyc;
 
-    constructor(address _pionerV1Address) {
-        pnr = PionerV1(_pionerV1Address);
+    constructor(address _pionerV1, address _pionerV1Compliance) {
+        pnr = PionerV1(_pionerV1);
+        kyc = PionerV1Compliance(_pionerV1Compliance);
     }
 
     function getOracle(uint256 oracleId) public view returns (
@@ -147,5 +149,31 @@ contract View {
         );
     }
 
+        function getKycData(address user, address counterparty) public view returns (
+        bool waitingKyc,
+        address kycLinkedAddress,
+        utils.kycType kycType,
+        uint256 maxPosition,
+        uint256 nextMaxPosition,
+        uint256 lastKycUpdate,
+        bool isKycPaused
+    ) {
+        waitingKyc = kyc.getKycWaitingAddress(user, counterparty);
+        kycLinkedAddress = kyc.getKycAddress(user);
+        kycType = kyc.getKycType(user);
+        maxPosition = kyc.getMaxPositions(user);
+        nextMaxPosition = kyc.getNextMaxPositions(user);
+        lastKycUpdate = kyc.getLastKycParameterUpdateTime(user);
+        isKycPaused = kyc.getKycPaused(user);
 
+        return (
+            waitingKyc,
+            kycLinkedAddress,
+            kycType,
+            maxPosition,
+            nextMaxPosition,
+            lastKycUpdate,
+            isKycPaused
+        );
+    }
 }

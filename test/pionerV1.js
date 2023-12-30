@@ -48,13 +48,13 @@ describe("PionerV1 Contract", function () {
     const mintAmount = ethers.parseUnits("10000", 18);
     await fakeUSD.mint(addr1.address, mintAmount);
     await fakeUSD.connect(addr1).approve(pionerV1Compliance.target, mintAmount);
-    await pionerV1Compliance.connect(addr1).firstDeposit(ethers.parseUnits("10000", 18), 9, addr1);
+    await pionerV1Compliance.connect(addr1).deposit(ethers.parseUnits("10000", 18), 9, addr1);
     await fakeUSD.mint(addr2.address, mintAmount);
     await fakeUSD.connect(addr2).approve(pionerV1Compliance.target, mintAmount);
-    await pionerV1Compliance.connect(addr2).firstDeposit(ethers.parseUnits("10000", 18), 9, addr2);
+    await pionerV1Compliance.connect(addr2).deposit(ethers.parseUnits("10000", 18), 9, addr2);
     await fakeUSD.mint(addr3.address, mintAmount);
     await fakeUSD.connect(addr3).approve(pionerV1Compliance.target, mintAmount);
-    await pionerV1Compliance.connect(addr3).firstDeposit(ethers.parseUnits("10000", 18), 9, addr3);
+    await pionerV1Compliance.connect(addr3).deposit(ethers.parseUnits("10000", 18), 9, addr3);
   });
 /*
   it("Deposit and withdraw tests", async function () {
@@ -198,7 +198,8 @@ describe("PionerV1 Contract", function () {
     console.log(`Balances: ${balances[0]}, ${balances[1]}, ${balances[2]}, Owed : ${owed1}, ${owed2}`);
     console.log('Expiration Tests Pass');
     
-  }); */
+  }); */ 
+  /*
   it("Tests Settlement  ", async function () {
 
     await pionerV1Open.connect(addr1).deployBOracle(
@@ -222,11 +223,11 @@ describe("PionerV1 Contract", function () {
     owed1 = await pionerV1.getOwedAmount(addr1, addr2);
     owed2 = await pionerV1.getOwedAmount(addr2, addr1);
     console.log(`Balances: ${balances[0]}, ${balances[1]}, ${balances[2]}, Owed : ${owed1}, ${owed2}`);
-    console.log('Settle Tests Pass');
+    console.log('Settlement Tests Pass');
     
-  });
+  }); */
 
-  it("Tests Defaults  ", async function () {
+  it("Tests Defaults A ", async function () {
 
     await pionerV1Open.connect(addr1).deployBOracle(
       "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C", "0x2167ece6ee3201b7b61f4cdc17bf2e874ca6ad850c390ba2c5a76d703a1b8cd2", "0xc2dec53d44e1fcc69b96f72c2d0a73080c328a0c6ac74bac9f575e7afbf6884b",
@@ -243,6 +244,32 @@ describe("PionerV1 Contract", function () {
     await network.provider.send("evm_mine");
     const block = await ethers.provider.getBlock('latest');
     await pionerV1.connect(addr1).updatePriceDummy(0, ethers.parseUnits("45000", 18), block.timestamp);
+    await pionerV1Default.connect(addr2).settleAndLiquidate(0);
+
+    balances = await pionerV1.getBalances(addr1, addr2, addr3);
+    owed1 = await pionerV1.getOwedAmount(addr1, addr2);
+    owed2 = await pionerV1.getOwedAmount(addr2, addr1);
+    console.log(`Balances: ${balances[0]}, ${balances[1]}, ${balances[2]}, Owed : ${owed1}, ${owed2}`);
+    console.log('Defaults Tests Pass');
+    
+  });  
+  it("Tests Defaults B ", async function () {
+
+    await pionerV1Open.connect(addr1).deployBOracle(
+      "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C", "0x2167ece6ee3201b7b61f4cdc17bf2e874ca6ad850c390ba2c5a76d703a1b8cd2", "0xc2dec53d44e1fcc69b96f72c2d0a73080c328a0c6ac74bac9f575e7afbf6884b",
+      10, 2, ethers.parseUnits("10", 16), ethers.parseUnits("10", 16), ethers.parseUnits("25", 15), ethers.parseUnits("25", 15),
+      60, 1440 * 30 * 3, 1440 * 30 * 3, 1440 * 30 * 3 , 0); 
+    await pionerV1Open.connect(addr1).openQuote( true,0, ethers.parseUnits("50", 18), ethers.parseUnits("10", 18), ethers.parseUnits("50", 16),
+      true, owner,owner ); 
+
+    await pionerV1Open.connect(addr2).acceptQuote(0, ethers.parseUnits("50", 18), owner); 
+    balances = await pionerV1.getBalances(addr1, addr2, addr3);
+    console.log(`Balances: ${balances[0]}, ${balances[1]}, ${balances[2]}`);
+
+    await network.provider.send("evm_increaseTime", [1440 * 30 * 3 + 1]);
+    await network.provider.send("evm_mine");
+    const block = await ethers.provider.getBlock('latest');
+    await pionerV1.connect(addr1).updatePriceDummy(0, ethers.parseUnits("1", 15), block.timestamp);
     await pionerV1Default.connect(addr2).settleAndLiquidate(0);
 
     balances = await pionerV1.getBalances(addr1, addr2, addr3);

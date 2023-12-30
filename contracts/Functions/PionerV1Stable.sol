@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.20;
-// LICENSE.txt at : https://www.pioner.io/license
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -68,12 +67,13 @@ contract PionerV1Stable {
 
 }
 
+// change getBalances with mint ( done in PionerV1Storage )
+// change all balances[msg.sender] to getBalance()
+
 // balance + im - minted > 0 mint liquidation
 // balance - minted > 0 position liquidation
 
 // owed need stable to transform it in usd
-
-// modify withdraw
 
 // open quote im + balance
 

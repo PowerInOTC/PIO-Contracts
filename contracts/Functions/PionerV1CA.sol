@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: BUSL-1.1
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.20;
-// LICENSE.txt at : https://www.pioner.io/license
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -184,10 +183,11 @@ contract PionerV1CA is PionerV1Storage {
         require((bO.lastPrice != utils.int64ToUint256(price)), "if price is exact same do no update, market closed");
         bO.lastPrice = utils.int64ToUint256(price); 
         bO.lastPriceUpdateTime = time;
+        emit updatePricePythEvent(bOracleId, bO.lastPrice);
     }
 
-
-    function updateCumIm(utils.bOracle memory bO, utils.bContract memory bC, uint256 bContractId) external onlyContracts {
+    // update cum Im for stable default management
+    function updateCumIm(utils.bOracle memory bO, utils.bContract memory bC, uint256 bContractId) external onlyContracts { 
         if( bC.state == utils.cState.Open || bC.state == utils.cState.Quote){
             if(bC.pA != address(0) ){
                 cumImBalances[bC.pA] += utils.getIm(bO, true) * bC.price / 1e18 * bC.qty - bContractImBalances[bC.pA][bContractId] ;
@@ -205,7 +205,29 @@ contract PionerV1CA is PionerV1Storage {
         }
     }
 
-    
+    function updateMinimumOpenPartialFillNotional(uint256 newAmount) public {
+        minimumOpenPartialFillNotional[msg.sender] = newAmount;
+    }
+
+    function updateSponsorReward(uint256 newAmount) public {
+        sponsorReward[msg.sender] = newAmount;
+    }
+
+    function paySponsor(address receiver,address target, uint256 price, uint256 lastPrice, uint256 im, bool isA) external onlyContracts{
+        if(receiver ==  target){
+        }
+        else if(isA && (lastPrice / price /1e18) <=  im * 8e17 / 1e18){
+            if(balances[target] >= sponsorReward[target]){
+                balances[receiver] += sponsorReward[target];
+                balances[target] -= sponsorReward[target];
+            }   
+        } else if (!isA && (price / lastPrice /1e18) <=  im * 8e17 / 1e18){
+            if(balances[target] >= sponsorReward[target]){
+                balances[receiver] += sponsorReward[target];
+                balances[target] -= sponsorReward[target];
+            }   
+        }
+    }
 
 
 }
