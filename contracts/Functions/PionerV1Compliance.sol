@@ -1,24 +1,31 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.20;
+pragma solidity >=0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../PionerV1.sol";
 //import { PionerV1Utils as utils } from "../Libs/PionerV1Utils.sol";
 
+
+/**
+ * @title PionerV1 Compliance
+ * @dev This contract manage compliance functions, deposits and withdraws. Compliance is customisable to be trustless. Only deposit and open positions functions can be blocked by Compliance, withdraw and close functions cannot for safety reasons.
+ * @notice This contract is not audited
+ * @author Microderiv
+ */
 contract PionerV1Compliance {
     using SafeERC20 for IERC20;
 
-    PionerV1 private pnr;
+    PionerV1 private pio;
 
     constructor(address _pionerV1) {
-        pnr = PionerV1(_pionerV1);
+        pio = PionerV1(_pionerV1);
     }
 
     // Compliance module
      mapping ( address => mapping (address => bool)) internal kycWaitingAddress;// user // kyc 
 	 mapping ( address => address) internal kycAddress; //user
-	 mapping ( address => utils.kycType) internal kycTypes; // user
+	 mapping ( address => uint256) internal kycTypes; // user
      mapping ( address => uint256) internal maxPositions;// kyc 
      mapping ( address => uint256) internal nextMaxPositions;// kyc 
      mapping ( address => uint256 ) internal lastKycParameterUpdateTime;
@@ -42,25 +49,25 @@ contract PionerV1Compliance {
     function deposit(uint256 _amount) public {
         require(kycAddress[msg.sender] != address(0), "CA11");
             require(_amount > 0, "CA12");
-            IERC20 BALANCETOKEN = pnr.getBALANCETOKEN();
+            IERC20 BALANCETOKEN = pio.getBALANCETOKEN();
             require(BALANCETOKEN.balanceOf(msg.sender) >= _amount, "CA13");
-            pnr.setBalance( _amount, msg.sender, address(0), true, false);
+            pio.setBalance( _amount, msg.sender, address(0), true, false);
             BALANCETOKEN.safeTransferFrom(msg.sender, address(this), _amount); 
             emit DepositEvent(msg.sender, _amount);
     }
 
     // First Deposit
-    function deposit(uint256 _amount, utils.kycType _kyc, address _kycAddress ) public {
-        if(kycAddress[msg.sender] == address(0) &&   _kyc != utils.kycType.unasigned){
+    function deposit(uint256 _amount, uint256 _kyc, address _kycAddress ) public {
+        if(kycAddress[msg.sender] == address(0) &&   _kyc != 0){
             setKycAddress( msg.sender , _kycAddress, _kyc);
         }
         
-        if( _kyc == utils.kycType.oneWayOneSide || _kyc == utils.kycType.oneWayTwoSide || _kyc == utils.kycType.mint || _kyc == utils.kycType.fundOneWay || _kyc == utils.kycType.pirate ) {
+        if( _kyc == 2 || _kyc == 4 || _kyc == 6 || _kyc == 7 || _kyc == 1 ) {
             require(kycAddress[msg.sender] != address(0), "CA11");
             require(_amount > 0, "CA12");
-            IERC20 BALANCETOKEN = pnr.getBALANCETOKEN();
+            IERC20 BALANCETOKEN = pio.getBALANCETOKEN();
             require(BALANCETOKEN.balanceOf(msg.sender) >= _amount, "CA13");
-            pnr.setBalance( _amount, msg.sender, address(0), true, false);
+            pio.setBalance( _amount, msg.sender, address(0), true, false);
             BALANCETOKEN.safeTransferFrom(msg.sender, address(this), _amount); 
             emit DepositEvent(msg.sender, _amount);
         }
@@ -68,45 +75,45 @@ contract PionerV1Compliance {
 
     // Initiate Withdraw function
     function initiateWithdraw(uint256 _amount) public { 
-        require( pnr.getBalance(msg.sender)  >= _getMintValue(msg.sender) + pnr.getTotalOwedAmount(msg.sender));
-        pnr.setGracePeriodLockedTime( msg.sender, block.timestamp); 
-        pnr.addGracePeriodLockedWithdrawBalances(msg.sender, _amount);
-        pnr.setBalance( _amount, msg.sender, address(0), false, true);
+        require( pio.getBalance(msg.sender)  >= _getMintValue(msg.sender) + pio.getTotalOwedAmount(msg.sender));
+        pio.setGracePeriodLockedTime( msg.sender, block.timestamp); 
+        pio.addGracePeriodLockedWithdrawBalances(msg.sender, _amount);
+        pio.setBalance( _amount, msg.sender, address(0), false, true);
         emit InitiateWithdrawEvent(msg.sender, _amount);
     }
 
     // Withdraw function
     function withdraw(uint256 _amount) public { 
-        require( pnr.getBalance(msg.sender)  >= _getMintValue(msg.sender) + pnr.getTotalOwedAmount(msg.sender));
-        require(pnr.getGracePeriodLockedWithdrawBalance(msg.sender) >= _amount, "CA41");
-        IERC20 BALANCETOKEN = pnr.getBALANCETOKEN();
-        require(pnr.getGracePeriodLockedTime(msg.sender) + pnr.getGRACE_PERIOD() < block.timestamp, "CA42");
-        pnr.removeGracePeriodLockedWithdrawBalances(msg.sender, _amount); 
-        pnr.setGracePeriodLockedTime( msg.sender, block.timestamp); 
+        require( pio.getBalance(msg.sender)  >= _getMintValue(msg.sender) + pio.getTotalOwedAmount(msg.sender));
+        require(pio.getGracePeriodLockedWithdrawBalance(msg.sender) >= _amount, "CA41");
+        IERC20 BALANCETOKEN = pio.getBALANCETOKEN();
+        require(pio.getGracePeriodLockedTime(msg.sender) + pio.getGRACE_PERIOD() < block.timestamp, "CA42");
+        pio.removeGracePeriodLockedWithdrawBalances(msg.sender, _amount); 
+        pio.setGracePeriodLockedTime( msg.sender, block.timestamp); 
         BALANCETOKEN.safeTransfer(msg.sender, _amount);
         emit WithdrawEvent(msg.sender, _amount);
     }
 
     // Cancel Withdraw function
     function cancelWithdraw(uint256 _amount) public {
-        require(pnr.getGracePeriodLockedWithdrawBalance(msg.sender) >= _amount, "CA51");
-        pnr.removeGracePeriodLockedWithdrawBalances( msg.sender, _amount);
-        pnr.setBalance( _amount, msg.sender, address(0), true, false);
+        require(pio.getGracePeriodLockedWithdrawBalance(msg.sender) >= _amount, "CA51");
+        pio.removeGracePeriodLockedWithdrawBalances( msg.sender, _amount);
+        pio.setBalance( _amount, msg.sender, address(0), true, false);
         emit CancelWithdrawEvent(msg.sender, _amount);
     }
         
     // Function to setkyc address
     // Once Kyc set, cannot be changed for an address
-    function setKycAddress(address target, address _kycAddress, utils.kycType _kyc) private {
+    function setKycAddress(address target, address _kycAddress, uint256 _kyc) private {
         if (target == _kycAddress) { // becoming a kyc admin
            kycAddress[target] = _kycAddress;
            kycTypes[target] = _kyc;
            emit kycValidated(target, _kycAddress);
-        } else if (_kyc == utils.kycType.twoWayOneSide ||_kyc == utils.kycType.twoWayTwoSide) {
+        } else if (_kyc == 3 ||_kyc == 5) {
            kycWaitingAddress[target][_kycAddress] = true;
            kycTypes[target] = _kyc;
            emit kycToValidat(target, _kycAddress);
-        } else if (_kyc == utils.kycType.oneWayOneSide || _kyc == utils.kycType.oneWayTwoSide || _kyc == utils.kycType.mint || _kyc == utils.kycType.fundOneWay || _kyc == utils.kycType.fundManager || _kyc == utils.kycType.pirate) {
+        } else if (_kyc == 2 || _kyc == 4 || _kyc == 6 || _kyc == 7 || _kyc == 9 || _kyc == 1) {
            kycAddress[target] = _kycAddress;
            kycTypes[target] = _kyc;
            emit kycValidated(target, _kycAddress);
@@ -125,8 +132,8 @@ contract PionerV1Compliance {
 
     // Function to revokekyc
     function revokeKyc(address target) public {
-        if ((kycTypes[msg.sender] ==utils.kycType.oneWayTwoSide 
-            || (kycTypes[msg.sender] ==utils.kycType.twoWayTwoSide) &&  kycAddress[target] == msg.sender)) {
+        if ((kycTypes[msg.sender] ==4 
+            || (kycTypes[msg.sender] ==5) &&  kycAddress[target] == msg.sender)) {
            kycAddress[target] = address(0);
         }
             emit kycRevoked(msg.sender, target);
@@ -136,7 +143,7 @@ contract PionerV1Compliance {
     // To update an oracle, create a new, and close this one.
     // Instant set to false after 1 week true is a feature.
     function manageBOracle(uint256 bOracleId, bool isPaused) public {
-        utils.bOracle memory bO = pnr.getBOracle(bOracleId);
+        utils.bOracle memory bO = pio.getBOracle(bOracleId);
         require(msg.sender == bO.kycAddress, "Unauthorized");
         // 1 week notice to allow peoples exist positions. ( 5 buisness day following ISDA requirements )
         require( bO.deployTime + 1440 * 7 > block.timestamp );
@@ -162,19 +169,19 @@ contract PionerV1Compliance {
 
         //kyc Check function
     function kycCheck(address target , address openQuoteParty) external view returns (bool) {
-        utils.kycType _kyc = kycTypes[target];
+        uint256 _kyc = kycTypes[target];
         address _kycAddress = kycAddress[target];
-        require(_kyc == utils.kycType.pirate || maxPositions[_kycAddress] >= pnr.getOpenPositionNumber(target), "kyc11");
+        require(_kyc == 1 || maxPositions[_kycAddress] >= pio.getOpenPositionNumber(target), "kyc11");
         require(!kycPaused[_kycAddress], "kyc12");
         if ( openQuoteParty == address(0)){
-            if( _kyc != utils.kycType.fundManager) {
+            if( _kyc != 9) {
                 return( true );
             } else {
                 return( false );
             }
         } else {
-            if (((_kyc == utils.kycType.oneWayTwoSide || _kyc == utils.kycType.twoWayTwoSide ||  _kyc == utils.kycType.twoWayTwoSide || _kyc == utils.kycType.fundTwoWay)
-                && _kycAddress != kycAddress[openQuoteParty]) || _kyc == utils.kycType.fundManager) {
+            if (((_kyc == 4 || _kyc == 5 ||  _kyc == 5 || _kyc == 8)
+                && _kycAddress != kycAddress[openQuoteParty]) || _kyc == 9) {
                 return( false );
             } else {
                 return( true );
@@ -183,18 +190,18 @@ contract PionerV1Compliance {
     }
 
     function getMintValue( address target ) external view returns(uint256) {
-        utils.bOracle memory bO = pnr.getBOracle(pnr.getBOracleIdStable(kycAddress[target]));
+        utils.bOracle memory bO = pio.getBOracle(pio.getBOracleIdStable(kycAddress[target]));
         require( bO.maxDelay + bO.lastPriceUpdateTime < block.timestamp );
-        return( pnr.getMintedAmounts(target) * bO.lastPrice );
+        return( pio.getMintedAmounts(target) * bO.lastPrice );
     }
 
     function _getMintValue( address target ) public view returns(uint256) {
-        utils.bOracle memory bO = pnr.getBOracle(pnr.getBOracleIdStable(kycAddress[target]));
+        utils.bOracle memory bO = pio.getBOracle(pio.getBOracleIdStable(kycAddress[target]));
         require( bO.maxDelay + bO.lastPriceUpdateTime < block.timestamp );
-        return( pnr.getMintedAmounts(target) * bO.lastPrice );
+        return( pio.getMintedAmounts(target) * bO.lastPrice );
     }
 
-    function getKycType(address user) external view returns (utils.kycType) {
+    function getKycType(address user) external view returns (uint256) {
         return kycTypes[user];
     }
 

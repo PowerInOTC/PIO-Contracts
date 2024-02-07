@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.20;
+pragma solidity >=0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -14,68 +14,28 @@ import "hardhat/console.sol";
 contract PionerV1CA is PionerV1Storage {
 
 
-    // setBalance( ,bC.pA, bC.pB, true, true);
-    function setBalance(uint256 amount, address target, address receiver, bool sign, bool revertMode) public onlyContracts {
-        uint256 _balance1 = balances[target];
-            uint256 _balance2 = balances[receiver];        
-        if (sign){
-            balances[target] += payOwed( amount, target);
-            _balance1 = balances[target];
-            _balance2 = balances[receiver];
-            console.log("1 %s , %s, %s, %s", _balance1 / 1e18, _balance2 / 1e18, amount / 1e18);
-        } else {
-            if ( amount >= balances[target]){
-                if (revertMode){
-                    revert("Not enough balance");
-                }
-                owedAmounts[target][receiver] += amount - balances[target];
-                totalOwedAmounts[target] += amount - balances[target];
-                balances[target] = 0;
-                _balance1 = balances[target];
-            _balance2 = balances[receiver];
-            console.log("2 %s , %s, %s, %s", _balance1 / 1e18, _balance2 / 1e18, amount / 1e18);
-            } else {
-                balances[target] -= amount;
-                _balance1 = balances[target];
-            _balance2 = balances[receiver];
-            console.log("3 %s , %s, %s, %s", _balance1 / 1e18, _balance2 / 1e18, amount / 1e18);
-            }
-        }
-    }
-
-        // setBalance( ,bC.pA, bC.pB, true, true);
-    function setBalancePrint(uint256 amount, address target, address receiver, bool sign, bool revertMode) external onlyContracts returns(uint256) {
+    /// @return uint256 paid ammount due to not enough balance
+    function setBalance(uint256 amount, address target, address receiver, bool sign, bool revertMode) external onlyContracts returns(uint256) {
         
-        uint256 _balance1 = balances[target];
-        uint256 _balance2 = balances[receiver];
         if (sign){
             balances[target] += payOwed( amount, target);
-            _balance1 = balances[target];
-            _balance2 = balances[receiver];
-            console.log("1 %s , %s, %s, %s", _balance1 / 1e18, _balance2 / 1e18, amount / 1e18);
             return(amount);
         } else {
             if ( amount >= balances[target]){
                 if (revertMode){
                     revert("Not enough balance");
                 }
-                addToOwed( amount - balances[target], target, receiver);
-                uint256 tempBalance;
+                uint256 temp = balances[target];
                 balances[target] = 0;
-                _balance1 = balances[target];
-            _balance2 = balances[receiver];
-            console.log("2 %s , %s, %s, %s", _balance1 / 1e18, _balance2 / 1e18, amount / 1e18);
-                return(tempBalance);
+                return(temp);
             } else {
                 balances[target] -= amount;
-            _balance1 = balances[target];
-            _balance2 = balances[receiver];
-            console.log("3 %s , %s, %s, %s", _balance1 / 1e18, _balance2 / 1e18, amount / 1e18);
                 return(amount);
             }
         }
     }
 
+    // interests on unpaid owed.debt
     function manageOwedIr( address target) private {
         uint256 ir;
         if ( avgOpenOwedTime[msg.sender] != block.timestamp){
@@ -85,65 +45,58 @@ contract PionerV1CA is PionerV1Storage {
         }
     }
 
-    function payOwed(uint256 amount, address target) public returns(uint256 returnedAmount) {
+    // only use inside a function
+    /// @param amount positive amount paid to 
+    /// @return returnedAmount amount paid using input amount 
+    function payOwed(uint256 amount, address target) internal returns(uint256 returnedAmount)  {
         manageOwedIr( msg.sender);
         if (totalOwedAmounts[target] >= amount) { 
-            totalOwedAmountPaids[target] += totalOwedAmounts[target] - amount;
+            totalOwedAmountPaids[target] += amount;
             returnedAmount = 0;
         } else {
-            totalOwedAmountPaids[target] += amount - totalOwedAmounts[target];
+            totalOwedAmountPaids[target] += totalOwedAmounts[target];
             returnedAmount = amount - totalOwedAmounts[target];
         }
         emit PayOwedEvent(target, returnedAmount);
         return returnedAmount;
     }
 
-    function addToOwed(uint256 deficit, address target, address receiver) internal { 
+    function addToOwed(uint256 deficit, address target, address receiver)  external onlyContracts { 
         owedAmounts[target][receiver] += deficit;
         totalOwedAmounts[target] += deficit;
         emit AddToOwedEvent(target, receiver, deficit);
     }
+
+/*    function addToOwedTest(uint256 deficit, address target, address receiver)  public { 
+        owedAmounts[target][receiver] += deficit;
+        totalOwedAmounts[target] += deficit;
+        emit AddToOwedEvent(target, receiver, deficit);
+    }*/
     
+    /// @dev Claim owed amount from amount prepaid by user or balance.
+    /// @param target address of user owing money
+    /// @param receiver address of user owed money from target
     function claimOwed(address target, address receiver) public {
-        balances[target] = gracePeriodLockedWithdrawBalances[target];
+        balances[target] += gracePeriodLockedWithdrawBalances[target];
         gracePeriodLockedWithdrawBalances[target] = 0;
+        balances[target] = payOwed(balances[target], target);
+
         uint256 owedAmount = owedAmounts[target][receiver];
-        if(balances[target] >= 0){
-            if( balances[target] >= owedAmount){
-                balances[target] -= owedAmount;
-                balances[receiver] += owedAmount;
-                owedAmounts[target][receiver] = 0;
-                totalOwedAmounts[target] -= owedAmount;
-            } else {
-                owedAmounts[target][receiver] -= balances[target];
-                totalOwedAmounts[target] -= balances[target];
-                owedAmount -= balances[target];
-                balances[receiver] += balances[target];
-                balances[target] -= 0;
-            }
-        }
+
         if (totalOwedAmountPaids[target] >= owedAmount){ 
             totalOwedAmounts[target] -= owedAmount;
             totalOwedAmountPaids[target] -= owedAmount;
-            balances[receiver] += owedAmount;
+            balances[receiver] += payOwed(owedAmount, receiver);
             owedAmounts[target][receiver] = 0;
         } else { 
             totalOwedAmounts[target] -= totalOwedAmountPaids[target];
             owedAmounts[target][receiver] -= totalOwedAmountPaids[target];
-            balances[receiver] += owedAmount;
+            balances[receiver] += payOwed(totalOwedAmountPaids[target], receiver);
             totalOwedAmountPaids[target] = 0;
         }
-        
         emit ClaimOwedEvent(target, receiver, owedAmount);
     }
     
-    function updatePriceDummy(uint256 bOracleId, uint256 price, uint256 time) public {
-        utils.bOracle storage bO = bOracles[bOracleId];
-        bO.lastPrice = price;
-        bO.lastPriceUpdateTime = time;
- 
-    }
-
     function payAffiliates(uint256 amount, address frontend, address affiliate, address hedger) public{
         balances[frontend] += amount * FRONTEND_SHARE;
         balances[affiliate] += amount * AFFILIATION_SHARE;
@@ -151,51 +104,17 @@ contract PionerV1CA is PionerV1Storage {
         balances[PIONER_DAO] += amount * PIONER_DAO_SHARE;
     }
 
-    function updatePricePyth( uint256 bOracleId, bytes[] memory _updateData1, bytes[] memory _updateData2) public { 
-        int64 price;
-        uint256 time;
-        utils.bOracle storage bO = bOracles[bOracleId];
-        IPyth pyth = IPyth(bO.priceFeedAddress);
-
-        require(bO.oracleType == utils.bOrType.Pyth);
-
-        uint feeAmount = pyth.getUpdateFee(_updateData1);
-        require(msg.sender.balance >= feeAmount, "Insufficient balance");
-        pyth.updatePriceFeeds{value: feeAmount}(_updateData1);
-        PythStructs.Price memory pythPrice = pyth.getPrice(bO.pythAddress1);
-        require(pythPrice.price > 0, "Pyth price is zero");
-
-        price = (pythPrice.price);
-        time = uint256(pythPrice.publishTime);      
-
-        feeAmount = pyth.getUpdateFee(_updateData2);
-        require(msg.sender.balance >= feeAmount, "Insufficient balance");
-        pyth.updatePriceFeeds{value: feeAmount}(_updateData2);
-        pythPrice = pyth.getPrice(bO.pythAddress2);
-        require(pythPrice.price > 0, "Pyth price is zero");
-
-        price = price / (pythPrice.price) / 1e6;
-
-        if ( time < uint256(pythPrice.publishTime)){
-            time = uint256(pythPrice.publishTime);
-        }
-        require(bO.maxDelay < time, " Oracle input expired ");
-        require((bO.lastPrice != utils.int64ToUint256(price)), "if price is exact same do no update, market closed");
-        bO.lastPrice = utils.int64ToUint256(price); 
-        bO.lastPriceUpdateTime = time;
-        emit updatePricePythEvent(bOracleId, bO.lastPrice);
-    }
 
     // update cum Im for stable default management
     function updateCumIm(utils.bOracle memory bO, utils.bContract memory bC, uint256 bContractId) external onlyContracts { 
-        if( bC.state == utils.cState.Open || bC.state == utils.cState.Quote){
+        if( bC.state == 2 || bC.state == 1){
             if(bC.pA != address(0) ){
                 cumImBalances[bC.pA] += utils.getIm(bO, true) * bC.price / 1e18 * bC.qty - bContractImBalances[bC.pA][bContractId] ;
             }
             if(bC.pB != address(0) ){
                 cumImBalances[bC.pB] += utils.getIm(bO, true) * bC.price / 1e18 * bC.qty - bContractImBalances[bC.pB][bContractId] ;
             }
-        } else if ( bC.state == utils.cState.Closed || bC.state == utils.cState.Liquidated || bC.state == utils.cState.Canceled){
+        } else if ( bC.state == 3 || bC.state == 4 || bC.state == 4){
             if(bC.pA != address(0) ){
                 cumImBalances[bC.pA] -= bContractImBalances[bC.pA][bContractId] ;
             }
@@ -231,5 +150,7 @@ contract PionerV1CA is PionerV1Storage {
 
 
 }
+
+
 
 

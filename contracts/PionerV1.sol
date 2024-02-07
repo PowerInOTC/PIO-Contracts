@@ -1,13 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.20;
+pragma solidity >=0.8.20;
 
 import "./Functions/PionerV1CA.sol";
 
 import { PionerV1Utils as utils } from "./Libs/PionerV1Utils.sol";
 
-
+/**
+ * @title PionerV1
+ * @notice This contract is not audited
+ * @author Microderiv
+ */
 contract PionerV1 is PionerV1CA{
-    constructor(address daiAddress, 
+    /** 
+     * PionerV1CA is PionerV1Storage 
+     * PionerV1Open, PionerV1Close, PionerV1Compliance, PionerV1Default and PionerV1Oracle are independant contract whiteslited on initilization.
+     * 
+    */
+    constructor(
+        address daiAddress, 
         uint256 min_notional,
         uint256 frontend_share,
         uint256 affiliation_share,
@@ -41,13 +51,17 @@ contract PionerV1 is PionerV1CA{
         address _PIONERV1CLOSE,
         address _PIONERV1DEFAULT,
         address _PIONERV1STABLE,
-        address _PIONERV1COMPLIANCE ) public {
+        address _PIONERV1COMPLIANCE,
+        address _PIONERV1ORACLE ,
+        address _PIONERV1WARPER  ) public {
         require(ISCONTRACTINIT == false);
         PIONERV1OPEN = _PIONERV1OPEN;
         PIONERV1CLOSE = _PIONERV1CLOSE;
         PIONERV1DEFAULT = _PIONERV1DEFAULT;
         PIONERV1STABLE = _PIONERV1STABLE;
         PIONERV1COMPLIANCE = _PIONERV1COMPLIANCE;
+        PIONERV1ORACLE = _PIONERV1ORACLE;
+        PIONERV1WARPER = _PIONERV1WARPER;
         ISCONTRACTINIT = true;
     }
 }

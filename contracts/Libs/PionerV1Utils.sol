@@ -1,19 +1,35 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.20;
+pragma solidity >=0.8.20;
 
 import "hardhat/console.sol";
 
 
 library PionerV1Utils {
-    
-    enum cState {Quote, Open, Closed, Canceled, Liquidated}
-    enum cType { Swap, Call, Put}
+    /*
+    enum cState {1: Quote, 2: Open, 3: Closed, 4: Canceled, 5: Liquidated}
+    enum cType { 1: Swap, 2: Call, 3: Put, 4: SwapBidAsk}
+    enum forceCloseType{ 1: Market, 2: TOT}
     // two side only when both party of a trade mustkyced 
 	// oneWay when anyone can subscribe // twoWay whenkyc need a confirmation
 	// mint is a oneWayOneSide
     // trusted is against a single party without settlement obligations.
-    enum kycType {unasigned, oneWayOneSide, twoWayOneSide, oneWayTwoSide, twoWayTwoSide, mint, fundOneWay, fundTwoWay, fundManager, pirate, trusted}   
-    enum bOrType {Pyth, Chainlink, Dummy}
+    enum kycType {0: unasigned, , 1: self, 2: oneWayOneSide, 3: twoWayOneSide, 4: oneWayTwoSide, 5: twoWayTwoSide, 6: mint, 7: fundOneWay, 8: fundTwoWay, 9: fundManager, 10 : trusted}   
+    enum bOrType {1 : Pyth, 2: Chainlink, 3: Dummy, 4 : Pion}
+*/
+    struct upnlSig {
+        int256 appId;
+        bytes reqId;
+        bytes32 asset1;
+        bytes32 asset2;
+        uint256 lastBid;
+        uint256 lastAsk;
+        uint256 confidence;
+        uint256 signTime;
+        // SchnorrSign
+        uint256 signature; 
+        address owner;
+        address nonce;
+    }
 
     struct bContract { 
         address pA; 
@@ -25,11 +41,13 @@ library PionerV1Utils {
         uint256 interestRate; 
         bool isAPayingAPR;
         uint256 openTime;
-        cState state;
+        uint256 state;
         address frontEnd;
         address hedger;
         address affiliate;
         uint256 cancelTime;
+        address oracleChangeInitializer;
+        uint256 oracleChangeId;
     }
 
     //Struct for Close Quote ( Limit Close )
@@ -42,30 +60,43 @@ library PionerV1Utils {
         address initiator; 
         uint256 cancelTime;
         uint256 openTime; 
-        cState state;
+        uint256 state;
     } 
 
     //Struct for Oracle
     struct bOracle{
-        uint256 lastPrice;
-        uint256 lastPriceUpdateTime; 
-        uint256 maxDelay;
+        bytes32 asset1;
+        bytes32 asset2;
+        uint256 oracleType;
+        // Pyth
         address priceFeedAddress;
         bytes32 pythAddress1;
         bytes32 pythAddress2;
-        bOrType oracleType;
+        // Pion
+        uint256 lastBid;
+        uint256 lastAsk;
+        address publicOracleAddress;
+        uint256 maxConfidence;
+        uint256 x;
+        uint8 parity;
+        uint256 maxDelay;
+
+        uint256 lastPrice;
+        uint256 lastPriceUpdateTime; 
         uint256 imA;
         uint256 imB;
         uint256 dfA;
         uint256 dfB;
-        uint256 expiryA; // time where position can be closed at last oracle price
+        uint256 expiryA;
         uint256 expiryB;
         uint256 timeLockA; 
         uint256 timeLockB;
-        cType cType;
+        uint256 cType;
+        uint256 forceCloseType;
         address kycAddress; 
         bool isPaused;
         uint256 deployTime;
+        /*
         // CCP
         address ccpDAO;
         uint256 longQty;
@@ -76,6 +107,7 @@ library PionerV1Utils {
         uint256 maxShortOI;
         uint256 ir;
         uint256 volatilityThreshold; // not add to owed if pass that threshold
+        */
     }
 
     function int64ToUint256(int64 value) public pure returns (uint256) {
@@ -122,9 +154,8 @@ library PionerV1Utils {
         }
     }
 
-
     function calculateIr( uint256 rate, uint256 time, uint256 price, uint256 qty) public pure returns(uint256){
-        return( rate * time /1e18 * price / 1e18 * qty / 1e18) / 31536000;
+        return( rate * time * price / 1e18 * qty / 1e18) / 31536000;
     }
 
     // getNotional(_bOracle, _bContract, true);
@@ -137,7 +168,7 @@ library PionerV1Utils {
     }
 
     function getIm(bOracle memory bO, bool isA) internal pure returns(uint256 im) {
-        if( bO.cType == cType.Swap){
+        if( bO.cType == 1){
             if( isA ){
                 return( bO.imA );
             } else {

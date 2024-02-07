@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.20;
+pragma solidity >=0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -10,7 +10,12 @@ import "./PionerV1Compliance.sol";
 
 import "hardhat/console.sol";
 
-
+/**
+ * @title PionerV1 Stable
+ * @dev This contract manage stablecoins management functions.
+ * @notice This contract is unfinished.
+ * @author Microderiv
+ */
 contract PionerV1ERC20 is ERC20, Ownable {
     using SafeERC20 for IERC20;
 
@@ -28,11 +33,11 @@ contract PionerV1ERC20 is ERC20, Ownable {
 // DF is not taken in collateral, but IM does
 
 contract PionerV1Stable {
-    PionerV1 private pnr;
+    PionerV1 private pio;
     PionerV1Compliance private kyc;
 
     constructor(address _pionerV1, address _pionerV1Compliance) {
-        pnr = PionerV1(_pionerV1);
+        pio = PionerV1(_pionerV1);
         kyc = PionerV1Compliance(_pionerV1Compliance);
     }
     event TokenCreated(address indexed tokenAddress);
@@ -40,29 +45,29 @@ contract PionerV1Stable {
 
 
     function createToken(string memory name, string memory symbol, uint256 bOracleId) public {
-        require( pnr.getAccountToToken(msg.sender) == address(0));
+        require( pio.getAccountToToken(msg.sender) == address(0));
         PionerV1ERC20 newToken = new PionerV1ERC20(name, symbol);
         newToken.transferOwnership(address(this));
-        pnr.setbOracleIdStable(msg.sender, bOracleId);
-        pnr.setAccountToToken(msg.sender, address(newToken));
+        pio.setbOracleIdStable(msg.sender, bOracleId);
+        pio.setAccountToToken(msg.sender, address(newToken));
         emit TokenCreated(address(newToken));
     }
 
 
     function mintToken(uint256 amount) public {
-        require(pnr.getBalance(msg.sender) + kyc.getMintValue(msg.sender) >= pnr.getMintedAmounts(msg.sender) + amount, "TokenFactory: Insufficient magic balance for minting");
-        PionerV1ERC20 token = PionerV1ERC20(pnr.getAccountToToken(kyc.getKycAddress(msg.sender)));
+        require(pio.getBalance(msg.sender) + kyc.getMintValue(msg.sender) >= pio.getMintedAmounts(msg.sender) + amount, "TokenFactory: Insufficient magic balance for minting");
+        PionerV1ERC20 token = PionerV1ERC20(pio.getAccountToToken(kyc.getKycAddress(msg.sender)));
         token.mint(msg.sender, amount);
-        pnr.addMintedAmounts(msg.sender, amount);
+        pio.addMintedAmounts(msg.sender, amount);
     }
 
 
     function burnToken(uint256 amount) public {
-        PionerV1ERC20 token = PionerV1ERC20(pnr.getAccountToToken(kyc.getKycAddress(msg.sender)));
-        require( amount <= pnr.getMintedAmounts(msg.sender) );
+        PionerV1ERC20 token = PionerV1ERC20(pio.getAccountToToken(kyc.getKycAddress(msg.sender)));
+        require( amount <= pio.getMintedAmounts(msg.sender) );
         require(token.balanceOf(msg.sender) >= amount, "Insufficient token balance");
         token.burn(msg.sender, amount);
-        pnr.removeMintedAmounts(msg.sender, amount);
+        pio.removeMintedAmounts(msg.sender, amount);
     }
 
 }

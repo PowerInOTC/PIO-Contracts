@@ -31,7 +31,6 @@ async function main() {
   await pionerV1Open.connect(addr2).acceptQuote(0, ethers.parseUnits("50", 18), "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C") 
   await pionerV1Close.connect(addr1).openCloseQuote( [0], [ethers.parseUnits("50", 18)], [ethers.parseUnits("10", 18)], [0], [60000000000] )
 
-    console.log(1);
 
 }
 

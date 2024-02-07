@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.20;
+pragma solidity >=0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -10,7 +10,11 @@ import "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
 import { PionerV1Utils as utils } from "../Libs/PionerV1Utils.sol";
 import "hardhat/console.sol";
 
-contract PionerV1Storage{
+import "../Libs/MuonClientBase.sol";
+import "../Libs/SchnorrSECP256K1Verifier.sol";
+import "../interfaces/IMuonNodeManager.sol";
+
+contract PionerV1Storage is MuonClientBase{
     using SafeERC20 for IERC20;
 
     uint256 internal MIN_NOTIONAL;
@@ -35,6 +39,8 @@ contract PionerV1Storage{
     address internal PIONERV1CCP;
     address internal PIONERV1FLATCOIN;
     address internal PIONERV1MANAGEMENT;
+    address internal PIONERV1ORACLE;
+    address internal PIONERV1WARPER;
     
     modifier onlyContracts() {
         require(
@@ -46,7 +52,9 @@ contract PionerV1Storage{
             //msg.sender == PIONERV1CCP ||
             //msg.sender == PIONERV1FLATCOIN ||
             //msg.sender == PIONERV1MANAGEMENT ||
-            msg.sender == PIONERV1COMPLIANCE,
+            msg.sender == PIONERV1COMPLIANCE ||
+            msg.sender == PIONERV1ORACLE ||
+            msg.sender == PIONERV1WARPER ,
             "Caller not authorized"
         );
         _;
@@ -167,16 +175,6 @@ contract PionerV1Storage{
     function getBalance(address user) external view returns (uint256) {
         return balances[user];
     }
-/*
-    function getBalance(address user) external view returns (uint256) {
-        uint256 _mintValue = kyc.getMintValue;
-        if( balances[user]  > _mintValue ){
-            return (balances[user] - _mintValue);
-        }
-        else{
-            return( 0 );
-        }
-    }*/
 
      function getBalances(address user, address user2, address user3) external view returns (uint256,uint256,uint256) {
         return (balances[user] / 1e18,balances[user2]/ 1e18,balances[user3]/ 1e18);

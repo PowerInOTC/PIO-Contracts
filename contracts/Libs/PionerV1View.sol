@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.20;
+pragma solidity >=0.8.20;
 
 import "../PionerV1.sol";
 import "../Functions/PionerV1Compliance.sol";
@@ -20,7 +20,7 @@ contract PionerV1View {
         address priceFeedAddress,
         bytes32 pythAddress1,
         bytes32 pythAddress2,
-        utils.bOrType oracleType,
+        uint256 oracleType,
         uint256 imA,
         uint256 imB,
         uint256 dfA,
@@ -60,7 +60,7 @@ contract PionerV1View {
         uint256 interestRate,
         bool isAPayingAPR,
         uint256 openTime,
-        utils.cState state,
+        uint256 state,
         address frontEnd,
         address hedger,
         address affiliate,
@@ -94,7 +94,7 @@ contract PionerV1View {
         address initiator,
         uint256 cancelTime,
         uint256 openTime,
-        utils.cState state
+        uint256 state
     ) {
         utils.bCloseQuote memory closeQuote = pnr.getBCloseQuote(closeQuoteId);
         return (
@@ -149,10 +149,10 @@ contract PionerV1View {
         );
     }
 
-        function getKycData(address user, address counterparty) public view returns (
+    function getKycData(address user, address counterparty) public view returns (
         bool waitingKyc,
         address kycLinkedAddress,
-        utils.kycType kycType,
+        uint256 kycType,
         uint256 maxPosition,
         uint256 nextMaxPosition,
         uint256 lastKycUpdate,
