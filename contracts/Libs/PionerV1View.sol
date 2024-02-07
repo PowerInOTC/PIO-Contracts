@@ -5,22 +5,27 @@ import "../PionerV1.sol";
 import "../Functions/PionerV1Compliance.sol";
 
 contract PionerV1View {
-    PionerV1 private pnr;
+    PionerV1 private pio;
     PionerV1Compliance private kyc;
 
     constructor(address _pionerV1, address _pionerV1Compliance) {
-        pnr = PionerV1(_pionerV1);
+        pio = PionerV1(_pionerV1);
         kyc = PionerV1Compliance(_pionerV1Compliance);
     }
 
     function getOracle(uint256 oracleId) public view returns (
+        bytes32 asset1,
+        bytes32 asset2,
+        uint256 oracleType,
+        uint256 lastBid,
+        uint256 lastAsk,
+        address publicOracleAddress,
+        uint256 maxConfidence,
+        uint256 x,
+        uint8 parity,
+        uint256 maxDelay,
         uint256 lastPrice,
         uint256 lastPriceUpdateTime,
-        uint256 maxDelay,
-        address priceFeedAddress,
-        bytes32 pythAddress1,
-        bytes32 pythAddress2,
-        uint256 oracleType,
         uint256 imA,
         uint256 imB,
         uint256 dfA,
@@ -28,27 +33,46 @@ contract PionerV1View {
         uint256 expiryA,
         uint256 expiryB,
         uint256 timeLockA,
-        uint256 timeLockB
+        uint256 timeLockB,
+        uint256 cType,
+        uint256 forceCloseType,
+        address kycAddress,
+        bool isPaused,
+        uint256 deployTime
     ) {
-        utils.bOracle memory bO = pnr.getBOracle(oracleId);
+        utils.bOracle memory oracle = pio.getBOracle(oracleId);
         return (
-            bO.lastPrice,
-            bO.lastPriceUpdateTime,
-            bO.maxDelay,
-            bO.priceFeedAddress,
-            bO.pythAddress1,
-            bO.pythAddress2,
-            bO.oracleType,
-            bO.imA,
-            bO.imB,
-            bO.dfA,
-            bO.dfB,
-            bO.expiryA,
-            bO.expiryB,
-            bO.timeLockA,
-            bO.timeLockB
+            oracle.asset1,
+            oracle.asset2,
+            oracle.oracleType,
+            oracle.priceFeedAddress,
+            oracle.pythAddress1,
+            oracle.pythAddress2,
+            oracle.lastBid,
+            oracle.lastAsk,
+            oracle.publicOracleAddress,
+            oracle.maxConfidence,
+            oracle.x,
+            oracle.parity,
+            oracle.maxDelay,
+            oracle.lastPrice,
+            oracle.lastPriceUpdateTime,
+            oracle.imA,
+            oracle.imB,
+            oracle.dfA,
+            oracle.dfB,
+            oracle.expiryA,
+            oracle.expiryB,
+            oracle.timeLockA,
+            oracle.timeLockB,
+            oracle.cType,
+            oracle.forceCloseType,
+            oracle.kycAddress,
+            oracle.isPaused,
+            oracle.deployTime
         );
     }
+
 
     function getContract(uint256 contractId) public view returns (
         address pA,
@@ -66,7 +90,7 @@ contract PionerV1View {
         address affiliate,
         uint256 cancelTime
     ) {
-        utils.bContract memory bC = pnr.getBContract(contractId);
+        utils.bContract memory bC = pio.getBContract(contractId);
         return (
             bC.pA,
             bC.pB,
@@ -96,7 +120,7 @@ contract PionerV1View {
         uint256 openTime,
         uint256 state
     ) {
-        utils.bCloseQuote memory closeQuote = pnr.getBCloseQuote(closeQuoteId);
+        utils.bCloseQuote memory closeQuote = pio.getBCloseQuote(closeQuoteId);
         return (
             closeQuote.bContractIds,
             closeQuote.price,
@@ -123,17 +147,17 @@ contract PionerV1View {
         uint256 contractLength,
         uint256 closeQuoteLength
     ) {
-        openPositionNumber = pnr.getOpenPositionNumber(user);
-        owedAmount = pnr.getOwedAmount(user, counterparty);
-        totalOwedAmount = pnr.getTotalOwedAmount(user);
-        totalOwedAmountPaid = pnr.getTotalOwedAmountPaid(user);
-        gracePeriodLockedWithdrawBalance = pnr.getGracePeriodLockedWithdrawBalance(user);
-        gracePeriodLockedTime = pnr.getGracePeriodLockedTime(user);
-        minimumOpenPartialFillNotional = pnr.getMinimumOpenPartialFillNotional(user);
-        sponsorReward = pnr.getSponsorReward(user);
-        oracleLength = pnr.getBOracleLength(); 
-        contractLength = pnr.getBContractLength(); 
-        closeQuoteLength = pnr.getBCloseQuoteLength(); 
+        openPositionNumber = pio.getOpenPositionNumber(user);
+        owedAmount = pio.getOwedAmount(user, counterparty);
+        totalOwedAmount = pio.getTotalOwedAmount(user);
+        totalOwedAmountPaid = pio.getTotalOwedAmountPaid(user);
+        gracePeriodLockedWithdrawBalance = pio.getGracePeriodLockedWithdrawBalance(user);
+        gracePeriodLockedTime = pio.getGracePeriodLockedTime(user);
+        minimumOpenPartialFillNotional = pio.getMinimumOpenPartialFillNotional(user);
+        sponsorReward = pio.getSponsorReward(user);
+        oracleLength = pio.getBOracleLength(); 
+        contractLength = pio.getBContractLength(); 
+        closeQuoteLength = pio.getBCloseQuoteLength(); 
         return (
             openPositionNumber,
             owedAmount,

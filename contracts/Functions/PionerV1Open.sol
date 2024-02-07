@@ -54,7 +54,6 @@ contract PionerV1Open {
         bC.state = 1;
         bC.frontEnd = frontEnd;
         bC.affiliate = affiliate;
-        bO.forceCloseType = 1;
         
         if(isLong){
             pio.setBalance( (bO.imA + bO.dfA) * qty / 1e18 * price / 1e18, msg.sender, address(0), false, true);

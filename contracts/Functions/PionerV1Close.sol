@@ -120,10 +120,10 @@ contract PionerV1Close {
         require( _bCloseQuote.qty[index] * bO.lastPrice / 1e18 >= pio.getMinNotional(), "Close33");
         require(bC.state == 2, "Close34");
         require(_bCloseQuote.expiry[index] >= block.timestamp, "Close34a");
-        require( bO.lastPriceUpdateTime <= bO.maxDelay + block.timestamp, "Close34b" );
+        require( bO.lastPriceUpdateTime <= bO.maxDelay + block.timestamp, "Close34c" );
         require(block.timestamp - bC.openTime > bO.maxDelay, "Close35"); 
         require( _bCloseQuote.initiator == msg.sender, "Close36");
-        require( _bCloseQuote.limitOrStop[index] == 0, "Close37");
+        require( _bCloseQuote.limitOrStop[index] == 1, "Close37");
         require(_bCloseQuote.openTime + pio.getCancelTimeBuffer() <= block.timestamp, "Close38");
         uint256 bidAsk;
         if(msg.sender == bC.pA ){ bidAsk = bO.lastAsk; } else { bidAsk = bO.lastBid;}
@@ -131,11 +131,11 @@ contract PionerV1Close {
         (uint256 uPnl, bool isNegative) = utils.calculateuPnl( bC.price, _bCloseQuote.price[index], bC.qty, bC.interestRate, bC.openTime, bC.isAPayingAPR );
 
         if (msg.sender == bC.pA){
-            require( _bCloseQuote.price[index] >= bidAsk, "Close310");
+            require( _bCloseQuote.price[index] <= bidAsk, "Close310");
         }
         else{
             require(msg.sender == bC.pB, "Close311");
-            require( _bCloseQuote.price[index] <= bidAsk, "Close312");
+            require( _bCloseQuote.price[index] >= bidAsk, "Close312");
         }
         closePosition(bC, bO, _bCloseQuote.bContractIds[index], uPnl, isNegative, _bCloseQuote.qty[index], _bCloseQuote.price[index]);
         _bCloseQuote.qty[index] = 0;

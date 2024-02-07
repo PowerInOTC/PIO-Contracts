@@ -8,7 +8,12 @@ import "../Libs/MuonClientBase.sol";
 import "../Libs/SchnorrSECP256K1VerifierV2.sol";
 import { PionerV1Utils as utils } from "../Libs/PionerV1Utils.sol";
 
-
+/**
+ * @title PionerV1 Oracle
+ * @dev This contract manage oracle initialization and price update. Working with Pyth Network and Pion Network.
+ * @notice This contract is not audited
+ * @author Microderiv
+ */
 contract PionerV1Oracle {
     PionerV1 private pio;
     SchnorrSECP256K1VerifierV2 public verifier;
@@ -91,6 +96,8 @@ contract PionerV1Oracle {
         bO.timeLockA = _timeLockA;
         bO.timeLockB = _timeLockB;
         bO.cType = _cType;
+        bO.forceCloseType = 1;
+        
         bO.lastPriceUpdateTime = block.timestamp;
         emit deployBContract(pio.getBOracleLength());
         pio.setBOracle(pio.getBOracleLength(), bO);

@@ -46,8 +46,21 @@ library PionerV1Utils {
         address hedger;
         address affiliate;
         uint256 cancelTime;
+    }
+
+    struct bContractUpdate {
         address oracleChangeInitializer;
         uint256 oracleChangeId;
+        bool isTranferAInit;
+        bool isTranferBInit;
+        address targetTransferA; 
+        address targetTransferB;
+        uint256 transferBribeA;
+        uint256 transferBribeB;
+        mapping(address => uint256) transferOfferA; 
+        mapping(address => uint256) transferOfferB; 
+        mapping(address => uint256) transferOfferBribeA; 
+        mapping(address => uint256) transferOfferBribeB; 
     }
 
     //Struct for Close Quote ( Limit Close )

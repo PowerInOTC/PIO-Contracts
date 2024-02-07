@@ -215,30 +215,30 @@ it("Close Market", async function () {
   const _bContractIds = [bContractId,bContractId]; 
   const _price = [ethers.parseUnits("54", 18), ethers.parseUnits("50", 18)];
   const _qty = [ethers.parseUnits("10", 18), ethers.parseUnits("10", 18)]; 
-  const _limitOrStop = [0, 0];
+  const _limitOrStop = [0, 1];
   const _expiry = [100000000000000, 100000000000000]; 
 
   await pionerV1Close.connect(addr1).openCloseQuote(_bContractIds, _price, _qty, _limitOrStop, _expiry);
 
-  const _upnlSig = {
-    appId: "8819953379267741478318858059556381531978766925841974117591953483223779600878",
-    reqId: "8819953379267741478318858059556381531978766925841974117591953483223779600878",
-    asset1: "0x757373746f636b2e6161706c0000000000000000000000000000000000000000",
+  const priceSignature = {
+    appId: "8819953379267741478318858059556381531978766925841974117591953483223779600878", 
+    reqId: "0x6519a45ea86634dc3f369285463f6dd822b66e9feed77ee455dea421eee599a4",
+    asset1:  "0x757373746f636b2e6161706c0000000000000000000000000000000000000000",
     asset2: "0x66782e6575727573640000000000000000000000000000000000000000000000",
-    lastBid: ethers.parseUnits("551", 17),
-    lastAsk: ethers.parseUnits("550", 17),
-    confidence: ethers.parseUnits("1", 17),
-    signTime: 171630166706844450000,
-    signature: "0xcb79da3d1619b44d779a48eb9d82f82ff7183ae38b83592b04598cf55ffa3a10",
-    owner: "0xAddressOfOwner",
-    nonce: "0xaA0Ff10585dEda00eA4Aa6514CF74Fe23258D3b0"
+    lastBid: ethers.parseUnits("551", 17), 
+    lastAsk: ethers.parseUnits("550", 17), 
+    confidence: ethers.parseUnits("1", 18), 
+    signTime: (await ethers.provider.getBlock("latest")).timestamp, 
+    signature: "0x5c2bcf2be9dfb9a1f9057392aeaebd0fbc1036bec5a700425c49069b12842038", 
+    owner: "0x237A6Ec18AC7D9693C06f097c0EEdc16518d7c21",
+    nonce: "0x1365a32bDd33661a3282992D1C334D5aB2faaDc7"
   };
 
-  await pionerV1Oracle.updatePricePion( _upnlSig, bOracleId );
+  await pionerV1Oracle.updatePricePion(priceSignature, bOracleId);
 
   const getBCloseQuoteLength = await pionerV1.getBCloseQuoteLength();
   _bCloseQuoteId = getBCloseQuoteLength - BigInt(1) ;
-  _index = 0 ;
+  _index = 1 ;
   _amount = ethers.parseUnits("10", 18) ;
 
   await network.provider.send("evm_increaseTime", [1 * 24 * 60 * 60]);
