@@ -17,9 +17,9 @@ contract PionerV1Open {
     PionerV1 private pio;
     PionerV1Compliance private kyc;
 
-    event openQuoteEvent( address indexed target,uint256 indexed bContractId, bool isLong, uint256 bOracleId, uint256 price, uint256 qty, uint256 interestRate, bool isAPayingAPR); 
-    event acceptQuoteEvent( address indexed target, uint256 indexed bContractId, uint256 price); 
-    event cancelOpenQuoteEvent( uint256 indexed bContractId );
+    event openQuoteEvent( uint256 indexed bContractId); 
+    event acceptQuoteEvent( uint256 indexed bContractId); 
+    event cancelOpenQuoteEvent( uint256 indexed bContractId);
 
     constructor(address _pionerV1, address _pionerV1Compliance) {
         pio = PionerV1(_pionerV1);
@@ -64,7 +64,7 @@ contract PionerV1Open {
             bC.pB = msg.sender;
         }   
 
-        emit openQuoteEvent( msg.sender, pio.getBContractLength(), isLong, bOracleId, price, qty, interestRate, isAPayingAPR);
+        emit openQuoteEvent( pio.getBContractLength());
         pio.setBContract(pio.getBContractLength(), bC);
         pio.addBContractLength();
         pio.addOpenPositionNumber(msg.sender);
@@ -101,13 +101,13 @@ contract PionerV1Open {
                 
 
                 }
-            emit acceptQuoteEvent(msg.sender, bContractId, _acceptPrice);
+            emit acceptQuoteEvent(bContractId);
         } else if (bC.state == 1){
             if (bC.initiator == bC.pA){
                 bC.price = _acceptPrice;
                 bC.pB = msg.sender;
                 require(_acceptPrice <= bC.price, "Open26");
-                pio.setBalance( ( bO.imB + bO.dfB) * _acceptPrice / 1e18 * bC.qty / 1e18 , msg.sender, address(0), false, true);
+                pio.setBalance( ( bO.imB + bO.dfB) * _acceptPrice / 1e18 * bC.qty / 1e18 , bC.pB, address(0), false, true);
                 pio.addCumImBalances(msg.sender, bO.imB * bC.qty / 1e18 * _acceptPrice / 1e18 ); // @mint
                 pio.setBalance( (bO.imA + bO.dfA) * (_acceptPrice - bC.price) / 1e18 * bC.qty / 1e18  , bC.pA, address(0), true, false);
                 pio.removeCumImBalances(msg.sender, bO.imA * bC.qty / 1e18 * (_acceptPrice - bC.price) / 1e18 ); // @mint
@@ -116,9 +116,9 @@ contract PionerV1Open {
                 bC.price = _acceptPrice;
                 bC.pA = msg.sender;
                 require(_acceptPrice >= bC.price, "Open28");
-                pio.setBalance( ( bO.imA + bO.dfA) * _acceptPrice / 1e18 * bC.qty / 1e18  , bC.pB, address(0), false, false);
+                pio.setBalance( ( bO.imA + bO.dfA) * _acceptPrice / 1e18 * bC.qty / 1e18  , bC.pA, address(0), false, false);
                 pio.addCumImBalances(msg.sender, bO.imA * bC.qty / 1e18 * _acceptPrice / 1e18 ); // @mint
-                pio.setBalance( ((bO.imB + bO.dfB) * (_acceptPrice - bC.price) / 1e18 * bC.qty / 1e18) , msg.sender, address(0), true, true);
+                pio.setBalance( ((bO.imB + bO.dfB) * (_acceptPrice - bC.price) / 1e18 * bC.qty / 1e18) , bC.pB, address(0), true, true);
                 pio.removeCumImBalances(msg.sender, bO.imA * bC.qty / 1e18 * (_acceptPrice - bC.price) / 1e18 ); // @mint
             }
             bC.openTime = block.timestamp;
@@ -128,7 +128,7 @@ contract PionerV1Open {
             pio.setBContract(bContractId, bC);
 
             pio.updateCumIm(bO, bC, bContractId);
-            emit acceptQuoteEvent(msg.sender, bContractId, _acceptPrice);
+            emit acceptQuoteEvent(bContractId);
         }
     }
     

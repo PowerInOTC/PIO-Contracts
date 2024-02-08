@@ -18,15 +18,64 @@ contract PionerV1Close {
     PionerV1 private pio;
     PionerV1Compliance private kyc;
 
-    event openCloseQuoteEvent( address indexed target, uint256 indexed bCloseQuoteId, uint256[] bOracleids, uint256[] price, uint256[] qty, uint256[] limitOrStop, uint256[] expiration);
-    event acceptCloseQuoteEvent( address indexed target, uint256 indexed bCloseQuoteId, uint256 index, uint256 amount );
+    event openCloseQuoteEvent( uint256 indexed bCloseQuoteId);
+    event acceptCloseQuoteEvent( uint256 indexed bCloseQuoteId);
     event expirateBContractEvent(uint256 indexed bContractId);
-    event closeMarketEvent( address indexed target, uint256 indexed bCloseQuoteId, uint256 index);
+    event closeMarketEvent( uint256 indexed bCloseQuoteId);
     event cancelOpenCloseQuoteContractEvent(uint256 indexed bContractId);
+
+    event Cancelled(address indexed sender, bytes32 indexed messageHash);
+
+    mapping(bytes32 => bool) private cancelledMessages;
+
 
     constructor(address _pionerV1, address _pionerV1Compliance) {
         pio = PionerV1(_pionerV1);
         kyc = PionerV1Compliance(_pionerV1Compliance);
+    }
+
+    function cancelSignedMessage(bytes32 messageHash) public {
+        cancelledMessages[messageHash] = true;
+        emit Cancelled(msg.sender, messageHash);
+    }
+
+    function openCloseQuote(
+        uint256[] memory bContractIds,
+        uint256[] memory price,
+        uint256[] memory qty,
+        uint256[] memory limitOrStop,
+        uint256[] memory expiry,
+        bytes32 messageHash,
+        bytes memory signature
+    ) public {
+        require(!cancelledMessages[messageHash], "Close10a");
+        require( utils.verifySignatureCloseQuote(msg.sender,messageHash, signature ), "Close10b");
+        require(
+            bContractIds.length == price.length && 
+            price.length == qty.length && 
+            qty.length == limitOrStop.length &&
+            qty.length == expiry.length,
+            "Close11"
+        );
+        for (uint256 i = 0; i < qty.length; i++) {
+            require(qty[i] != 0, "Close12");
+            require(price[i] != 0, "Close13");
+        }
+
+        utils.bCloseQuote memory newQuote = utils.bCloseQuote(
+            bContractIds,
+            price,
+            qty,
+            limitOrStop,
+            expiry,
+            msg.sender,
+            0,                 
+            block.timestamp,
+            1
+        );
+        pio.setBCloseQuote(pio.getBCloseQuoteLength(), newQuote);
+        pio.addBCloseQuoteLength();
+        emit openCloseQuoteEvent(pio.getBCloseQuoteLength() - 1 );
     }
 
 
@@ -63,7 +112,7 @@ contract PionerV1Close {
         );
         pio.setBCloseQuote(pio.getBCloseQuoteLength(), newQuote);
         pio.addBCloseQuoteLength();
-        emit openCloseQuoteEvent(msg.sender, pio.getBCloseQuoteLength() - 1, bContractIds, price, qty, limitOrStop, expiry );
+        emit openCloseQuoteEvent(pio.getBCloseQuoteLength() - 1 );
     }
 
 
@@ -106,7 +155,7 @@ contract PionerV1Close {
         pio.setBCloseQuote(bCloseQuoteId, _bCloseQuote);
         pio.updateCumIm(bO, bC, _bCloseQuote.bContractIds[index]);
 
-        emit acceptCloseQuoteEvent( msg.sender, bCloseQuoteId, index, amount );
+        emit acceptCloseQuoteEvent( bCloseQuoteId);
     }    
 
     
@@ -141,7 +190,7 @@ contract PionerV1Close {
         _bCloseQuote.qty[index] = 0;
         pio.setBCloseQuote(bCloseQuoteId, _bCloseQuote);
         pio.updateCumIm(bO, bC, _bCloseQuote.bContractIds[index]);
-        emit closeMarketEvent( msg.sender, bCloseQuoteId, index);
+        emit closeMarketEvent(bCloseQuoteId);
   }
 
     function expirateBContract( uint256 bContractId) public { 

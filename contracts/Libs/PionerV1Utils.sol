@@ -57,10 +57,14 @@ library PionerV1Utils {
         address targetTransferB;
         uint256 transferBribeA;
         uint256 transferBribeB;
-        mapping(address => uint256) transferOfferA; 
-        mapping(address => uint256) transferOfferB; 
-        mapping(address => uint256) transferOfferBribeA; 
-        mapping(address => uint256) transferOfferBribeB; 
+    }
+
+    struct bContractTransferQuote {
+        uint256 transferOffer; 
+        uint256 transferOfferBribe;
+        uint256 transferMethod;
+        uint256 transferQuoteExpiry;
+        bool transferSide;
     }
 
     //Struct for Close Quote ( Limit Close )
@@ -190,6 +194,31 @@ library PionerV1Utils {
         }
     }
 
-    
+    function verifySignatureCloseQuote(
+        address signer,
+        bytes32 messageHash,
+        bytes memory signature
+    ) public pure returns (bool) {
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        
+        if (signature.length != 65) {
+            return false;
+        }
+
+        assembly {
+            r := mload(add(signature, 32))
+            s := mload(add(signature, 64))
+            v := byte(0, mload(add(signature, 96)))
+        }
+        if (v < 27) {
+            v += 27;
+        }
+        if (v != 27 && v != 28) {
+            return false;
+        }
+        return ecrecover(messageHash, v, r, s) == signer;
+    }
 
 }

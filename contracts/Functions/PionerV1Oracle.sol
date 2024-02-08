@@ -148,19 +148,21 @@ contract PionerV1Oracle {
 
     function twoWaybOracleChange( uint256 bContractId ,  uint256 oracleChangeId) public {
         utils.bContract memory bC = pio.getBContract(bContractId);
-        if (bC.oracleChangeInitializer == address(0) &&
+        utils.bContractUpdate memory bCU = pio.getBContractUpdate(bContractId);
+
+        if (bCU.oracleChangeInitializer == address(0) &&
             (msg.sender == bC.pA || msg.sender == bC.pB)){ // init
-                bC.oracleChangeInitializer = msg.sender;
-                bC.oracleChangeId = oracleChangeId;
+                bCU.oracleChangeInitializer = msg.sender;
+                bCU.oracleChangeId = oracleChangeId;
             }
-        else if (( bC.oracleChangeInitializer == bC.pA || bC.oracleChangeInitializer == bC.pB ) 
-            && msg.sender == bC.oracleChangeInitializer ) { // cancel
-            bC.oracleChangeInitializer == address(0);
+        else if (( bCU.oracleChangeInitializer == bC.pA || bCU.oracleChangeInitializer == bC.pB ) 
+            && msg.sender == bCU.oracleChangeInitializer ) { // cancel
+            bCU.oracleChangeInitializer == address(0);
         }   
-        else if (( bC.oracleChangeInitializer == bC.pA && msg.sender == bC.pB ) 
-            &&  bC.oracleChangeInitializer == bC.pB && msg.sender == bC.pA ){
-                bC.oracleId = bC.oracleChangeId;
-                bC.oracleChangeInitializer == address(0);
+        else if (( bCU.oracleChangeInitializer == bC.pA && msg.sender == bC.pB ) 
+            &&  bCU.oracleChangeInitializer == bC.pB && msg.sender == bC.pA ){
+                bC.oracleId = bCU.oracleChangeId;
+                bCU.oracleChangeInitializer == address(0);
         }
         pio.setBContract(bContractId, bC);
     }

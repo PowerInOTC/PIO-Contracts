@@ -1,6 +1,5 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const {assert} = require('assert');
 
 describe("PionerV1Close Contract", function () {
   let FakeUSD, fakeUSD, PionerV1, pionerV1;
@@ -118,36 +117,56 @@ describe("PionerV1Close Contract", function () {
     await pionerV1Open.connect(addr2).acceptQuote(_bOracleId, _acceptPrice, _backendAffiliate);
   });
 
-  it("Default Test", async function () {
+/*
+  it("Should fail to execute openCloseQuote with a cancelled signature", async function () {
+    const message = "Test Message";
+    const messageHash = ethers.utils.id(message);
+    const signature = await owner.signMessage(ethers.utils.arrayify(messageHash));
+
+    // Cancel the message
+    await pionerV1Close.cancelSignedMessage(messageHash);
+
+    // Attempt to use the cancelled message
+    await expect(pionerV1Close.openCloseQuote(
+      [1], [100], [10], [0], [1625097600], messageHash, signature
+    )).to.be.revertedWith("Message has been cancelled");
+  });*/
+
+  it("Should successfully execute openCloseQuote with a valid signature", async function () {
+
     const e18 = BigInt(ethers.parseUnits("1", 18));
+    const initialBalanceAddr1 = await pionerV1.getBalance(addr1);
+    const initialBalanceAddr2 = await pionerV1.getBalance(addr2);
+
+    console.log("balances : ",BigInt(initialBalanceAddr1)/BigInt(1e18),BigInt(initialBalanceAddr2)/BigInt(1e18));
+
     const bContractLength = await pionerV1.getBContractLength();
-    const bOracleLength = await pionerV1.getBOracleLength();
     const bContractId = bContractLength - BigInt(1);
-    const bOracleId = bOracleLength - BigInt(1);
 
-    const initBalanceAddr1 = await pionerV1.getBalance(addr1);
-    const initBalanceAddr2 = await pionerV1.getBalance(addr2);
-    const initowedAmount1 = await pionerV1.getOwedAmount(addr1,addr2);
-    const initowedAmount2 = await pionerV1.getOwedAmount(addr2,addr1);
-    console.log("balances : ",BigInt(initBalanceAddr1)/BigInt(1e18),BigInt(initBalanceAddr2)/BigInt(1e18), BigInt(initowedAmount1)/BigInt(1e18), BigInt(initowedAmount2)/BigInt(1e18));
+    const _bContractIds = [bContractId]; 
+    const _price = [ethers.parseUnits("45", 18)];
+    const _qty = [ethers.parseUnits("10", 18)]; 
+    const _limitOrStop = [0];
+    const _expiry = [100000000000000]; 
+    await network.provider.send("evm_increaseTime", [1 * 24 * 60 * 60]);
+    await network.provider.send("evm_mine");
 
-    const priceSignature = {
-      appId: "8819953379267741478318858059556381531978766925841974117591953483223779600878", 
-      reqId: "0x6519a45ea86634dc3f369285463f6dd822b66e9feed77ee455dea421eee599a4",
-      asset1:  "0x757373746f636b2e6161706c0000000000000000000000000000000000000000",
-      asset2: "0x66782e6575727573640000000000000000000000000000000000000000000000",
-      lastBid: ethers.parseUnits("55100000", 17), 
-      lastAsk: ethers.parseUnits("55000000", 17), 
-      confidence: ethers.parseUnits("1", 18), 
-      signTime: (await ethers.provider.getBlock("latest")).timestamp, 
-      signature: "0x5c2bcf2be9dfb9a1f9057392aeaebd0fbc1036bec5a700425c49069b12842038", 
-      owner: "0x237A6Ec18AC7D9693C06f097c0EEdc16518d7c21",
-      nonce: "0x1365a32bDd33661a3282992D1C334D5aB2faaDc7"
-    };
-  
-    await pionerV1Oracle.updatePricePion(priceSignature, bOracleId);
 
-    await pionerV1Default.settleAndLiquidate(bContractId);
+    const message = ethers.solidityPackedKeccak256(["string"], ["Test Message"]);
+    const signature = await owner.signMessage(message);
+
+
+    await expect(pionerV1Close.openCloseQuote(
+      _bContractIds, _price, _qty, _limitOrStop, _expiry, message, signature
+    )).to.emit(pionerV1Close, "OpenCloseQuoteEvent");
+
+    const getBCloseQuoteLength = await pionerV1.getBCloseQuoteLength();
+    _bCloseQuoteId = getBCloseQuoteLength - BigInt(1) ;
+    _index = 0 ;
+    _amount = ethers.parseUnits("10", 18) ;
+
+    await pionerV1Close.connect(addr2).acceptCloseQuote(_bCloseQuoteId,_index, ethers.parseUnits("5", 18)); 
+    await pionerV1Close.connect(addr2).acceptCloseQuote(_bCloseQuoteId,_index, ethers.parseUnits("5", 18)); 
 
     const finalBalanceAddr1 = await pionerV1.getBalance(addr1);
     const finalBalanceAddr2 = await pionerV1.getBalance(addr2);
@@ -156,5 +175,4 @@ describe("PionerV1Close Contract", function () {
     console.log("balances : ",BigInt(finalBalanceAddr1)/BigInt(1e18),BigInt(finalBalanceAddr2)/BigInt(1e18), BigInt(owedAmount1)/BigInt(1e18), BigInt(owedAmount2)/BigInt(1e18));
 
   });
-
 });

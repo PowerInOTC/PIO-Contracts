@@ -60,11 +60,13 @@ contract PionerV1Storage is MuonClientBase{
         _;
     }
 
-    mapping(address => uint256) internal balances; 
+    mapping( address => uint256) internal balances; 
     uint256 internal bOracleLength;
-    mapping(uint256 => utils.bOracle) internal bOracles;
+    mapping( uint256 => utils.bOracle) internal bOracles;
     uint256 internal bContractLength;
-    mapping(uint256 => utils.bContract) internal bContracts;
+    mapping( uint256 => utils.bContract) internal bContracts;
+    mapping( uint256 => utils.bContractUpdate) internal bContractUpdates;
+    mapping( uint256 => mapping( address => utils.bContractTransferQuote)) bContractTransferQuotes;
     uint256 internal bCloseQuotesLength;
     mapping(uint256 => utils.bCloseQuote) internal bCloseQuotes;
     mapping(address => uint256) internal openPositionNumbers;
@@ -99,6 +101,14 @@ contract PionerV1Storage is MuonClientBase{
 
     function getBContract(uint256 id) external view returns (utils.bContract memory) {
              return bContracts[id];
+        }
+
+    function getBContractTransferQuote(uint256 id, address target) external view returns (utils.bContractTransferQuote memory) {
+             return bContractTransferQuotes[id][target];
+        }
+
+    function getBContractUpdate(uint256 id) external view returns (utils.bContractUpdate memory) {
+             return bContractUpdates[id];
         }
 
     function getBOracle(uint256 id) external view returns (utils.bOracle memory) {
@@ -273,6 +283,14 @@ contract PionerV1Storage is MuonClientBase{
 
     function setBContract(uint256 id, utils.bContract memory newContract) external onlyContracts {
         bContracts[id] = newContract;
+    }
+
+    function setBContractUpdate(uint256 id, utils.bContractUpdate memory newContractUpdate) external onlyContracts {
+        bContractUpdates[id] = newContractUpdate;
+    }
+
+    function setBContractTransferQuote(uint256 id, address target, utils.bContractTransferQuote memory newBContractTransferQuote) external onlyContracts {
+        bContractTransferQuotes[id][target] = newBContractTransferQuote;
     }
 
     function setBOracle(uint256 id, utils.bOracle memory newOracle) external onlyContracts {
