@@ -193,32 +193,26 @@ library PionerV1Utils {
             }
         }
     }
-
-    function verifySignatureCloseQuote(
-        address signer,
+    /// @dev  EIP-155
+    function verifySignature(
         bytes32 messageHash,
         bytes memory signature
-    ) public pure returns (bool) {
+    ) public pure returns (address) {
         bytes32 r;
         bytes32 s;
         uint8 v;
-        
-        if (signature.length != 65) {
-            return false;
-        }
+
+        require(signature.length == 65, "Invalid signature length");
 
         assembly {
             r := mload(add(signature, 32))
             s := mload(add(signature, 64))
-            v := byte(0, mload(add(signature, 96)))
+            v := byte(0, mload(add(signature, 96))) 
         }
-        if (v < 27) {
-            v += 27;
-        }
-        if (v != 27 && v != 28) {
-            return false;
-        }
-        return ecrecover(messageHash, v, r, s) == signer;
-    }
+        if (v < 27) v += 27;
 
+        require(v == 27 || v == 28, "Invalid signature version");
+
+        return ecrecover(messageHash, v, r, s);
+    }
 }

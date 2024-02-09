@@ -112,6 +112,43 @@ contract PionerV1Warper {
         }
     }
 
+    function wrapperOpenTPSLOracleSwap(
+        bool isLong,
+        uint256 price,
+        uint256 qty,
+        uint256 interestRate, 
+        bool isAPayingAPR, 
+        address frontEnd, 
+        address affiliate,
+        bytes32 _asset1,
+        bytes32 _asset2,
+        uint256 _x,
+        uint8 _parity,
+        uint256 _maxConfidence,
+        uint256 _maxDelay,
+        uint256 _imA,
+        uint256 _imB,
+        uint256 _dfA,
+        uint256 _dfB,
+        uint256 _expiryA,
+        uint256 _expiryB,
+        uint256 _timeLockA,
+
+        address authorized,
+        bytes memory signatureOpen,
+        bytes32 signHashOpen,
+
+        bytes32 signHash,
+        bytes memory signature
+        ) public {
+
+        bytes32 paramsHash = keccak256(abi.encodePacked( block.chainid, address(this), signHashOpen, _x, _parity, _maxConfidence, _asset1, _asset2, _maxDelay, _imA, _imB, _dfA, _dfB, _expiryA, _expiryB, _timeLockA, _timeLockA ));
+        require(signHash == paramsHash, "Hash mismatch");
+        require( utils.verifySignature(signHash, signature) == utils.verifySignature(signHashOpen, signatureOpen));
+
+        oracle.deployBOraclePion( _x, _parity, _maxConfidence, _asset1, _asset2, _maxDelay, _imA, _imB, _dfA, _dfB, _expiryA, _expiryB, _timeLockA, _timeLockA, 1 );
+        open.openQuoteSigned(isLong, pio.getBOracleLength() - 1, price, qty, interestRate, isAPayingAPR, frontEnd, affiliate, authorized, signHashOpen, signatureOpen);
+    }
 
 
     

@@ -11,7 +11,7 @@ import "../PionerV1.sol";
  * @title PionerV1 Compliance
  * @dev This contract manage compliance functions, deposits and withdraws. Compliance is customisable to be trustless. Only deposit and open positions functions can be blocked by Compliance, withdraw and close functions cannot for safety reasons.
  * @notice This contract is not audited
- * @author Microderiv
+ * @author  Microderiv
  */
 contract PionerV1Compliance {
     using SafeERC20 for IERC20;

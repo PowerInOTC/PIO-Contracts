@@ -61,7 +61,9 @@ contract PionerV1Oracle {
         pio.setBOracle(pio.getBOracleLength(), bO);
         pio.addBOracleLength();
     }
-    
+
+
+
     function deployBOraclePion(
         uint256 x,
         uint8 parity,

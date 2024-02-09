@@ -24,59 +24,75 @@ contract PionerV1Close {
     event closeMarketEvent( uint256 indexed bCloseQuoteId);
     event cancelOpenCloseQuoteContractEvent(uint256 indexed bContractId);
 
-    event Cancelled(address indexed sender, bytes32 indexed messageHash);
-
-    mapping(bytes32 => bool) private cancelledMessages;
-
+    event cancelSignedMessageCloseEvent(address indexed sender, bytes32 indexed messageHash);
 
     constructor(address _pionerV1, address _pionerV1Compliance) {
         pio = PionerV1(_pionerV1);
         kyc = PionerV1Compliance(_pionerV1Compliance);
     }
 
-    function cancelSignedMessage(bytes32 messageHash) public {
-        cancelledMessages[messageHash] = true;
-        emit Cancelled(msg.sender, messageHash);
-    }
+    mapping(bytes32 => uint256) private cancelledCloseQuotes;
+    
 
-    function openCloseQuote(
-        uint256[] memory bContractIds,
-        uint256[] memory price,
-        uint256[] memory qty,
-        uint256[] memory limitOrStop,
-        uint256[] memory expiry,
-        bytes32 messageHash,
+    function cancelSignedMessageClose(
+        bytes32 targetHash,
+        bytes32 signHash,
         bytes memory signature
     ) public {
-        require(!cancelledMessages[messageHash], "Close10a");
-        require( utils.verifySignatureCloseQuote(msg.sender,messageHash, signature ), "Close10b");
-        require(
-            bContractIds.length == price.length && 
-            price.length == qty.length && 
-            qty.length == limitOrStop.length &&
-            qty.length == expiry.length,
-            "Close11"
-        );
-        for (uint256 i = 0; i < qty.length; i++) {
-            require(qty[i] != 0, "Close12");
-            require(price[i] != 0, "Close13");
-        }
 
+        bytes32 paramsHash = keccak256(abi.encodePacked(targetHash));
+
+        require(utils.verifySignature(paramsHash, signature) == utils.verifySignature(signHash, signature), "Unauthorized");
+        cancelledCloseQuotes[signHash] = block.timestamp;
+        emit cancelSignedMessageCloseEvent(msg.sender, signHash);
+    }
+
+    function openCloseQuoteSigned(
+        uint256 bContractId,
+        uint256 price,
+        uint256 qty,
+        uint256 limitOrStop,
+        uint256 expiry,
+        address authorized,
+        bytes32 signHash,
+        bytes memory signature
+    ) public {
+        require((cancelledCloseQuotes[signHash]+ pio.getCancelTimeBuffer()) <= block.timestamp || cancelledCloseQuotes[signHash] == 0, "Quote expired");
+        cancelledCloseQuotes[signHash]=block.timestamp - pio.getCancelTimeBuffer() -1;
+        bytes32 paramsHash = keccak256(abi.encodePacked(block.chainid, address(this), bContractId, price, qty, limitOrStop, expiry, authorized));
+        require(signHash == paramsHash, "Hash mismatch");
+        require(authorized == address(0) || msg.sender == authorized, "Invalid signature or unauthorized");
+        require(qty != 0 && price != 0, "Invalid parameters");
+
+
+        uint256[] memory bContractIds = new uint256[](1);
+        bContractIds[0] = bContractId;
+        uint256[] memory prices = new uint256[](1);
+        prices[0] = price;
+        uint256[] memory qtys = new uint256[](1);
+        qtys[0] = qty;
+        uint256[] memory limitOrStops = new uint256[](1);
+        limitOrStops[0] = limitOrStop;
+        uint256[] memory expiries = new uint256[](1);
+        expiries[0] = expiry;
+        console.log(utils.verifySignature(signHash, signature));
         utils.bCloseQuote memory newQuote = utils.bCloseQuote(
             bContractIds,
-            price,
-            qty,
-            limitOrStop,
-            expiry,
-            msg.sender,
-            0,                 
+            prices,
+            qtys,
+            limitOrStops,
+            expiries,
+            utils.verifySignature(signHash, signature),
+            0, 
             block.timestamp,
-            1
+            1  
         );
+
         pio.setBCloseQuote(pio.getBCloseQuoteLength(), newQuote);
         pio.addBCloseQuoteLength();
-        emit openCloseQuoteEvent(pio.getBCloseQuoteLength() - 1 );
+        emit openCloseQuoteEvent(pio.getBCloseQuoteLength() - 1);
     }
+
 
 
     function openCloseQuote(
