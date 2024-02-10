@@ -4,6 +4,9 @@ pragma solidity >=0.8.20;
 import "../PionerV1.sol";
 import "./PionerV1Compliance.sol";
 import { PionerV1Utils as utils } from "../Libs/PionerV1Utils.sol";
+import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
 
 import "hardhat/console.sol";
 
@@ -13,81 +16,97 @@ import "hardhat/console.sol";
  * @notice This contract is not audited
  * @author Microderiv
  */
-contract PionerV1Open {
+contract PionerV1Open  is EIP712  {
     PionerV1 private pio;
     PionerV1Compliance private kyc;
 
     event openQuoteEvent( uint256 indexed bContractId); 
-    event openQuoteSignedEvent( uint256 indexed bContractId,bytes32 indexed fillAPIEventId); 
-    event cancelSignedMessageOpenEvent(address indexed sender, bytes32 indexed messageHash);
+    event openQuoteSignedEvent( uint256 indexed bContractId,bytes indexed fillAPIEventId); 
+    event cancelSignedMessageOpenEvent(address indexed sender, bytes indexed messageHash);
 
     event acceptQuoteEvent( uint256 indexed bContractId); 
     event cancelOpenQuoteEvent( uint256 indexed bContractId);
 
-    constructor(address _pionerV1, address _pionerV1Compliance) {
+    constructor(address _pionerV1, address _pionerV1Compliance) EIP712("PionerV1Open", "1.0") {
         pio = PionerV1(_pionerV1);
         kyc = PionerV1Compliance(_pionerV1Compliance);
     }
 
-    mapping(bytes32 => uint256) private cancelledOpenQuotes;
+    mapping(bytes => uint256) private cancelledOpenQuotes;
     
 
     function cancelSignedMessageOpen(
-        bytes32 targetHash,
-        bytes32 signHash,
+        bytes calldata targetHash,
+        bytes calldata signHash,
         bytes memory signature
     ) public {
         bytes32 paramsHash = keccak256(abi.encodePacked(targetHash));
-        require(utils.verifySignature(paramsHash, signature) == utils.verifySignature(signHash, signature), "Unauthorized");
+        //require(utils.verifySignature(paramsHash, signature) == utils.verifySignature(signHash, signature), "Unauthorized");
         cancelledOpenQuotes[signHash] = block.timestamp;
         emit cancelSignedMessageOpenEvent(msg.sender, signHash);
     }
 
+    struct  OpenQuoteSign {
+        bool isLong;
+        uint256 bOracleId;
+        uint256 price;
+        uint256 qty;
+        uint256 interestRate;
+        bool isAPayingAPR;
+        address frontEnd;
+        address affiliate;
+        address authorized;
+        uint256 nonce; 
+    }
+
     function openQuoteSigned( 
-        bool isLong,
-        uint256 bOracleId,
-        uint256 price,
-        uint256 qty,
-        uint256 interestRate, 
-        bool isAPayingAPR, 
-        address frontEnd, 
-        address affiliate,
-        address authorized,
-        bytes32 signHash,
-        bytes memory signature
+        OpenQuoteSign calldata openQuoteSign,
+        bytes calldata signHash
         ) public {
+        bytes32 structHash = keccak256(abi.encode(
+            keccak256("Quote(bool isLong,uint256 bOracleId,uint256 price,uint256 qty,uint256 interestRate,bool isAPayingAPR,address frontEnd,address affiliate,address authorized,uint256 nonce)"),
+            openQuoteSign.isLong,
+            openQuoteSign.bOracleId,
+            openQuoteSign.price,
+            openQuoteSign.qty,
+            openQuoteSign.interestRate,
+            openQuoteSign.isAPayingAPR,
+            openQuoteSign.frontEnd,
+            openQuoteSign.affiliate,
+            openQuoteSign.authorized,
+            openQuoteSign.nonce
+            ));
+        
+        bytes32 hash = _hashTypedDataV4(structHash);
+        address signer = ECDSA.recover(hash, signHash);
 
         require((cancelledOpenQuotes[signHash]+ pio.getCancelTimeBuffer()) <= block.timestamp || cancelledOpenQuotes[signHash] == 0, "Quote expired");
         cancelledOpenQuotes[signHash]=block.timestamp - pio.getCancelTimeBuffer() -1;
-        address signer = utils.verifySignature(signHash, signature);    
-        console.log(signer, "signer");
-        bytes32 paramsHash = keccak256(abi.encodePacked(block.chainid, address(this), isLong, bOracleId, price, qty, interestRate, isAPayingAPR, frontEnd, affiliate, authorized));
-        require(signHash == paramsHash, "Hash mismatch");
-        require(authorized == address(0) || signer == authorized, "Invalid signature or unauthorized");
+        require(openQuoteSign.authorized == address(0) || signer == openQuoteSign.authorized, "Invalid signature or unauthorized");
 
         utils.bContract memory bC = pio.getBContract(pio.getBContractLength());
-        utils.bOracle memory bO = pio.getBOracle(bOracleId);
+        utils.bOracle memory bO = pio.getBOracle(openQuoteSign.bOracleId);
 
         require( pio.getOpenPositionNumber(signer) <= pio.getMaxOpenPositions(), "Open11" );
-        require(qty * price / 1e18 >= pio.getMinNotional(), "Open12");
+        require(openQuoteSign.qty * openQuoteSign.price / 1e18 >= pio.getMinNotional(), "Open12");
         require(kyc.kycCheck(signer , address(0)), "Open12b");
 
         bC.initiator = signer;
-        bC.price = price;
-        bC.qty = qty;
-        bC.interestRate = interestRate;
-        bC.isAPayingAPR = isAPayingAPR;
-        bC.oracleId = bOracleId;
+        bC.price = openQuoteSign.price;
+        bC.qty = openQuoteSign.qty;
+        bC.interestRate = openQuoteSign.interestRate;
+        bC.isAPayingAPR = openQuoteSign.isAPayingAPR;
+        bC.oracleId = openQuoteSign.bOracleId;
         bC.state = 1;
-        bC.frontEnd = frontEnd;
-        bC.affiliate = affiliate;
+        bC.frontEnd = openQuoteSign.frontEnd;
+        bC.affiliate = openQuoteSign.affiliate;
         
-        if(isLong){
-            pio.setBalance( (bO.imA + bO.dfA) * qty / 1e18 * price / 1e18, signer, address(0), false, true);
+        if(openQuoteSign.isLong){
+            pio.setBalance( (bO.imA + bO.dfA) * openQuoteSign.qty / 1e18 * openQuoteSign.price / 1e18, signer, address(0), false, true);
             bC.pA = signer;
         }
         else{
-            pio.setBalance( (bO.imB + bO.dfB) * qty / 1e18 * price / 1e18 , signer, address(0), false, true);
+            pio.setBalance( (bO.imB + bO.dfB) * openQuoteSign.qty / 1e18 * openQuoteSign.price / 1e18 , signer, address(0), false, true);
             bC.pB = signer;
         }   
 
@@ -142,8 +161,8 @@ contract PionerV1Open {
     }
 
     function acceptQuoteSigned(uint256 bContractId, uint256 _acceptPrice, address backendAffiliate, uint256 amount, bytes32 signHash, bytes memory signature) public {
-        require(cancelledOpenQuotes[signHash] == 0, "Quote expired");
-        cancelledOpenQuotes[signHash]=block.timestamp - pio.getCancelTimeBuffer() -1;
+        //require(cancelledOpenQuotes[signHash] == 0, "Quote expired");
+        //cancelledOpenQuotes[signHash]=block.timestamp - pio.getCancelTimeBuffer() -1;
         address signer = utils.verifySignature(signHash, signature);
         bytes32 paramsHash = keccak256(abi.encodePacked(block.chainid, address(this), bContractId, _acceptPrice, backendAffiliate, amount));
         require(signHash == paramsHash, "Hash mismatch");

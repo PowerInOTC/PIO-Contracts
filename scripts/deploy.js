@@ -70,10 +70,9 @@ async function main() {
       PionerV1Utils: pionerV1Utils.target,
     },
   });
-
-
   const pionerV1Close = await PionerV1Close.deploy(pionerV1.target, pionerV1Compliance.target);
   await pionerV1Close.waitForDeployment();
+
   // Deploy PionerV1Default
   const PionerV1Default = await hre.ethers.getContractFactory("PionerV1Default", {
     libraries: {
@@ -92,6 +91,21 @@ async function main() {
   const PionerV1View = await hre.ethers.getContractFactory("PionerV1View");
   const pionerV1View = await PionerV1View.deploy(pionerV1.target, pionerV1Compliance.target);
   await pionerV1View.waitForDeployment();
+
+  // Deploy PionerV1Oracle
+  const PionerV1Oracle = await hre.ethers.getContractFactory("PionerV1Oracle");
+  const pionerV1Oracle = await PionerV1Oracle.deploy(pionerV1.target, pionerV1Compliance.target);
+  await pionerV1Oracle.waitForDeployment();
+
+  // Deploy PionerV1Default
+  const PionerV1Warper = await hre.ethers.getContractFactory("PionerV1Warper", {
+    libraries: {
+      PionerV1Utils: pionerV1Utils.target,
+    },
+  });
+  const pionerV1Warper = await PionerV1Warper.deploy(pionerV1.target, pionerV1Compliance.target, pionerV1Open.target ,pionerV1Close.target ,pionerV1Default.target, pionerV1Oracle.target);
+  await pionerV1Warper.waitForDeployment();
+
 
   await verifyContract(pionerV1Utils.target, []);
   await verifyContract(fakeUSD.target, []);
@@ -116,6 +130,8 @@ async function main() {
   await verifyContract(pionerV1Default.target, [pionerV1.target, pionerV1Compliance.target]);
   await verifyContract(pionerV1Stable.target, [pionerV1.target, pionerV1Compliance.target]);
   await verifyContract(pionerV1View.target, [pionerV1.target, pionerV1Compliance.target]);
+  await verifyContract(pionerV1Oracle.target, [pionerV1.target, pionerV1Compliance.target]);
+  await verifyContract(pionerV1Warper.target, [pionerV1.target, pionerV1Compliance.target, pionerV1Open.target ,pionerV1Close.target ,pionerV1Default.target, pionerV1Oracle.target]);
 
 
   // Set contract addresses in PionerV1
@@ -124,7 +140,9 @@ async function main() {
     pionerV1Close.target,
     pionerV1Default.target,
     pionerV1Stable.target,
-    pionerV1Compliance.target
+    pionerV1Compliance.target,
+    pionerV1Oracle.target,
+    pionerV1Warper.target
   );
 
   console.log("const PionerV1UtilsAddress = ^", pionerV1Utils.target, "^");
@@ -136,6 +154,8 @@ async function main() {
   console.log("const PionerV1DefaultAddress = ^", pionerV1Default.target, "^");
   console.log("const PionerV1StableAddress = ^", pionerV1Stable.target, "^");
   console.log("const PionerV1ViewAddress = ^", pionerV1View.target, "^"); 
+  console.log("const PionerV1ViewAddress = ^", pionerV1Oracle.target, "^"); 
+  console.log("const PionerV1ViewAddress = ^", pionerV1Warper.target, "^"); 
 
   // Mint FakeUSD tokens to addr1, addr2, and addr3
   await fakeUSD.mint(ethers.parseUnits("10000", 18));
@@ -150,28 +170,11 @@ async function main() {
   await fakeUSD.connect(addr3).approve(pionerV1Compliance.target, ethers.parseUnits("10000", 18));
   await fakeUSD.connect(owner).approve(pionerV1Compliance.target, ethers.parseUnits("10000", 18));
 
-  await pionerV1Compliance.connect(addr1).deposit(ethers.parseUnits("10000", 18), 9, addr1);
-  await pionerV1Compliance.connect(addr2).deposit(ethers.parseUnits("10000", 18), 9, addr2);
-  await pionerV1Compliance.connect(addr3).deposit(ethers.parseUnits("10000", 18), 9, addr3);
-  await pionerV1Compliance.connect(owner).deposit(ethers.parseUnits("10000", 18), 9, owner);
-  
-  await pionerV1Open.connect(addr1).deployBOracle(
-    "0xFC6bd9F9f0c6481c6Af3A7Eb46b296A5B85ed379", "0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43", "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
-    20, 0, ethers.parseUnits("10", 16), ethers.parseUnits("10", 16), ethers.parseUnits("25", 15), ethers.parseUnits("25", 15),
-    60, 1440 * 30 * 3, 1440 * 30 * 3, 1440 * 30 * 3 , 0); 
+  await pionerV1Compliance.connect(addr1).deposit(ethers.parseUnits("10000", 18), 1, addr1);
+  await pionerV1Compliance.connect(addr2).deposit(ethers.parseUnits("10000", 18), 1, addr2);
+  await pionerV1Compliance.connect(addr3).deposit(ethers.parseUnits("10000", 18), 1, addr3);
+  await pionerV1Compliance.connect(owner).deposit(ethers.parseUnits("10000", 18), 1, owner);
 
-  await pionerV1Open.connect(addr1).deployBOracle(
-    "0xFC6bd9F9f0c6481c6Af3A7Eb46b296A5B85ed379", "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a", "0x26e4f737fde0263a9eea10ae63ac36dcedab2aaf629261a994e1eeb6ee0afe53",
-    20, 2, ethers.parseUnits("10", 16), ethers.parseUnits("10", 16), ethers.parseUnits("25", 15), ethers.parseUnits("25", 15),
-    60, 1440 * 30 * 3, 1440 * 30 * 3, 1440 * 30 * 3 , 0); 
-
-  await pionerV1Open.connect(addr1).openQuote( true,0, ethers.parseUnits("50", 18), ethers.parseUnits("10", 18), ethers.parseUnits("50", 16),
-    true, owner,owner ); 
-  await pionerV1Open.connect(addr1).openQuote( true,1, ethers.parseUnits("50", 18), ethers.parseUnits("10", 18), ethers.parseUnits("50", 16),
-    true, owner,owner ); 
-
-  await pionerV1Open.connect(addr2).acceptQuote(0, ethers.parseUnits("50", 18), owner);
-  await pionerV1Open.connect(addr3).acceptQuote(0, ethers.parseUnits("50", 18), owner); 
 
   console.log("Deposits completed");
 }

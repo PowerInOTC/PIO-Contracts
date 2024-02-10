@@ -147,7 +147,7 @@ contract PionerV1Warper {
         require( utils.verifySignature(signHash, signature) == utils.verifySignature(signHashOpen, signatureOpen));
 
         oracle.deployBOraclePion( _x, _parity, _maxConfidence, _asset1, _asset2, _maxDelay, _imA, _imB, _dfA, _dfB, _expiryA, _expiryB, _timeLockA, _timeLockA, 1 );
-        open.openQuoteSigned(isLong, pio.getBOracleLength() - 1, price, qty, interestRate, isAPayingAPR, frontEnd, affiliate, authorized, signHashOpen, signatureOpen);
+        //open.openQuoteSigned(isLong, pio.getBOracleLength() - 1, price, qty, interestRate, isAPayingAPR, frontEnd, affiliate, authorized, signHashOpen, signatureOpen);
     }
 
 

@@ -66,20 +66,20 @@ describe("PionerV1Close Contract", function () {
     pionerV1Stable = await PionerV1Stable.deploy(pionerV1.target, pionerV1Compliance.target);
     PionerV1Oracle = await ethers.getContractFactory("PionerV1Oracle");
     pionerV1Oracle  = await PionerV1Oracle.deploy(pionerV1.target, pionerV1Compliance.target);
-    PionerV1Warper = await ethers.getContractFactory("PionerV1Warper");
+    PionerV1Warper = await ethers.getContractFactory("PionerV1Warper", {libraries: {PionerV1Utils: pionerV1Utils.target,},});
     pionerV1Warper = await PionerV1Warper.deploy(pionerV1.target, pionerV1Compliance.target, pionerV1Open.target ,pionerV1Close.target ,pionerV1Default.target, pionerV1Oracle.target );
     
     await pionerV1.connect(owner).setContactAddress(pionerV1Open.target,pionerV1Close.target,pionerV1Default.target,pionerV1Stable.target,pionerV1Compliance.target,pionerV1Oracle.target, pionerV1Warper.target );
     const mintAmount = ethers.parseUnits("10000", 18);
     await fakeUSD.connect(addr1).mint(mintAmount);
     await fakeUSD.connect(addr1).approve(pionerV1Compliance.target, mintAmount);
-    await pionerV1Compliance.connect(addr1).deposit(ethers.parseUnits("10000", 18), 1, addr1);
+    await pionerV1Compliance.connect(addr1).deposit(ethers.parseUnits("100", 18), 1, addr1);
     await fakeUSD.connect(addr2).mint(mintAmount);
     await fakeUSD.connect(addr2).approve(pionerV1Compliance.target, mintAmount);
-    await pionerV1Compliance.connect(addr2).deposit(ethers.parseUnits("10000", 18), 1, addr2);
+    await pionerV1Compliance.connect(addr2).deposit(ethers.parseUnits("100", 18), 1, addr2);
     await fakeUSD.connect(addr3).mint(mintAmount);
     await fakeUSD.connect(addr3).approve(pionerV1Compliance.target, mintAmount);
-    await pionerV1Compliance.connect(addr3).deposit(ethers.parseUnits("10000", 18), 1, addr3);
+    await pionerV1Compliance.connect(addr3).deposit(ethers.parseUnits("100", 18), 1, addr3);
 
     _x = "0x20568a84796e6ade0446adfd2d8c4bba2c798c2af0e8375cc3b734f71b17f5fd" ;
     _parity = 0 ;
@@ -118,7 +118,7 @@ describe("PionerV1Close Contract", function () {
     await pionerV1Open.connect(addr2).acceptQuote(_bOracleId, _acceptPrice, _backendAffiliate);
   });
 
-  it("Default Test", async function () {
+  it("Default Test PartyA", async function () {
     const e18 = BigInt(ethers.parseUnits("1", 18));
     const bContractLength = await pionerV1.getBContractLength();
     const bOracleLength = await pionerV1.getBOracleLength();
@@ -138,6 +138,123 @@ describe("PionerV1Close Contract", function () {
       asset2: "0x66782e6575727573640000000000000000000000000000000000000000000000",
       lastBid: ethers.parseUnits("55100000", 17), 
       lastAsk: ethers.parseUnits("55000000", 17), 
+      confidence: ethers.parseUnits("1", 18), 
+      signTime: (await ethers.provider.getBlock("latest")).timestamp, 
+      signature: "0x5c2bcf2be9dfb9a1f9057392aeaebd0fbc1036bec5a700425c49069b12842038", 
+      owner: "0x237A6Ec18AC7D9693C06f097c0EEdc16518d7c21",
+      nonce: "0x1365a32bDd33661a3282992D1C334D5aB2faaDc7"
+    };
+  
+    await pionerV1Oracle.updatePricePion(priceSignature, bOracleId);
+
+    await pionerV1Default.settleAndLiquidate(bContractId);
+
+    const finalBalanceAddr1 = await pionerV1.getBalance(addr1);
+    const finalBalanceAddr2 = await pionerV1.getBalance(addr2);
+    const owedAmount1 = await pionerV1.getOwedAmount(addr1,addr2);
+    const owedAmount2 = await pionerV1.getOwedAmount(addr2,addr1);
+    console.log("balances : ",BigInt(finalBalanceAddr1)/BigInt(1e18),BigInt(finalBalanceAddr2)/BigInt(1e18), BigInt(owedAmount1)/BigInt(1e18), BigInt(owedAmount2)/BigInt(1e18));
+
+  });
+
+  it("Settelemnt Test PartyA", async function () {
+    const e18 = BigInt(ethers.parseUnits("1", 18));
+    const bContractLength = await pionerV1.getBContractLength();
+    const bOracleLength = await pionerV1.getBOracleLength();
+    const bContractId = bContractLength - BigInt(1);
+    const bOracleId = bOracleLength - BigInt(1);
+
+    const initBalanceAddr1 = await pionerV1.getBalance(addr1);
+    const initBalanceAddr2 = await pionerV1.getBalance(addr2);
+    const initowedAmount1 = await pionerV1.getOwedAmount(addr1,addr2);
+    const initowedAmount2 = await pionerV1.getOwedAmount(addr2,addr1);
+    console.log("balances : ",BigInt(initBalanceAddr1)/BigInt(1e18),BigInt(initBalanceAddr2)/BigInt(1e18), BigInt(initowedAmount1)/BigInt(1e18), BigInt(initowedAmount2)/BigInt(1e18));
+
+    const priceSignature = {
+      appId: "8819953379267741478318858059556381531978766925841974117591953483223779600878", 
+      reqId: "0x6519a45ea86634dc3f369285463f6dd822b66e9feed77ee455dea421eee599a4",
+      asset1:  "0x757373746f636b2e6161706c0000000000000000000000000000000000000000",
+      asset2: "0x66782e6575727573640000000000000000000000000000000000000000000000",
+      lastBid: ethers.parseUnits("551", 17), 
+      lastAsk: ethers.parseUnits("550", 17), 
+      confidence: ethers.parseUnits("1", 18), 
+      signTime: (await ethers.provider.getBlock("latest")).timestamp, 
+      signature: "0x5c2bcf2be9dfb9a1f9057392aeaebd0fbc1036bec5a700425c49069b12842038", 
+      owner: "0x237A6Ec18AC7D9693C06f097c0EEdc16518d7c21",
+      nonce: "0x1365a32bDd33661a3282992D1C334D5aB2faaDc7"
+    };
+  
+    await pionerV1Oracle.updatePricePion(priceSignature, bOracleId);
+
+    await pionerV1Default.settleAndLiquidate(bContractId);
+
+    const finalBalanceAddr1 = await pionerV1.getBalance(addr1);
+    const finalBalanceAddr2 = await pionerV1.getBalance(addr2);
+    const owedAmount1 = await pionerV1.getOwedAmount(addr1,addr2);
+    const owedAmount2 = await pionerV1.getOwedAmount(addr2,addr1);
+    console.log("balances : ",BigInt(finalBalanceAddr1)/BigInt(1e18),BigInt(finalBalanceAddr2)/BigInt(1e18), BigInt(owedAmount1)/BigInt(1e18), BigInt(owedAmount2)/BigInt(1e18));
+
+  });
+
+  it("Default Test PartyA", async function () {
+    const e18 = BigInt(ethers.parseUnits("1", 18));
+    const bContractLength = await pionerV1.getBContractLength();
+    const bOracleLength = await pionerV1.getBOracleLength();
+    const bContractId = bContractLength - BigInt(1);
+    const bOracleId = bOracleLength - BigInt(1);
+
+    const initBalanceAddr1 = await pionerV1.getBalance(addr1);
+    const initBalanceAddr2 = await pionerV1.getBalance(addr2);
+    const initowedAmount1 = await pionerV1.getOwedAmount(addr1,addr2);
+    const initowedAmount2 = await pionerV1.getOwedAmount(addr2,addr1);
+    console.log("balances : ",BigInt(initBalanceAddr1)/BigInt(1e18),BigInt(initBalanceAddr2)/BigInt(1e18), BigInt(initowedAmount1)/BigInt(1e18), BigInt(initowedAmount2)/BigInt(1e18));
+
+    const priceSignature = {
+      appId: "8819953379267741478318858059556381531978766925841974117591953483223779600878", 
+      reqId: "0x6519a45ea86634dc3f369285463f6dd822b66e9feed77ee455dea421eee599a4",
+      asset1:  "0x757373746f636b2e6161706c0000000000000000000000000000000000000000",
+      asset2: "0x66782e6575727573640000000000000000000000000000000000000000000000",
+      lastBid: ethers.parseUnits("2", 5), 
+      lastAsk: ethers.parseUnits("1", 5), 
+      confidence: ethers.parseUnits("1", 18), 
+      signTime: (await ethers.provider.getBlock("latest")).timestamp, 
+      signature: "0x5c2bcf2be9dfb9a1f9057392aeaebd0fbc1036bec5a700425c49069b12842038", 
+      owner: "0x237A6Ec18AC7D9693C06f097c0EEdc16518d7c21",
+      nonce: "0x1365a32bDd33661a3282992D1C334D5aB2faaDc7"
+    };
+  
+    await pionerV1Oracle.updatePricePion(priceSignature, bOracleId);
+
+    await pionerV1Default.settleAndLiquidate(bContractId);
+
+    const finalBalanceAddr1 = await pionerV1.getBalance(addr1);
+    const finalBalanceAddr2 = await pionerV1.getBalance(addr2);
+    const owedAmount1 = await pionerV1.getOwedAmount(addr1,addr2);
+    const owedAmount2 = await pionerV1.getOwedAmount(addr2,addr1);
+    console.log("balances : ",BigInt(finalBalanceAddr1)/BigInt(1e18),BigInt(finalBalanceAddr2)/BigInt(1e18), BigInt(owedAmount1)/BigInt(1e18), BigInt(owedAmount2)/BigInt(1e18));
+
+  });
+
+  it("Settelemnt Test PartyB", async function () {
+    const e18 = BigInt(ethers.parseUnits("1", 18));
+    const bContractLength = await pionerV1.getBContractLength();
+    const bOracleLength = await pionerV1.getBOracleLength();
+    const bContractId = bContractLength - BigInt(1);
+    const bOracleId = bOracleLength - BigInt(1);
+
+    const initBalanceAddr1 = await pionerV1.getBalance(addr1);
+    const initBalanceAddr2 = await pionerV1.getBalance(addr2);
+    const initowedAmount1 = await pionerV1.getOwedAmount(addr1,addr2);
+    const initowedAmount2 = await pionerV1.getOwedAmount(addr2,addr1);
+    console.log("balances : ",BigInt(initBalanceAddr1)/BigInt(1e18),BigInt(initBalanceAddr2)/BigInt(1e18), BigInt(initowedAmount1)/BigInt(1e18), BigInt(initowedAmount2)/BigInt(1e18));
+
+    const priceSignature = {
+      appId: "8819953379267741478318858059556381531978766925841974117591953483223779600878", 
+      reqId: "0x6519a45ea86634dc3f369285463f6dd822b66e9feed77ee455dea421eee599a4",
+      asset1:  "0x757373746f636b2e6161706c0000000000000000000000000000000000000000",
+      asset2: "0x66782e6575727573640000000000000000000000000000000000000000000000",
+      lastBid: ethers.parseUnits("451", 17), 
+      lastAsk: ethers.parseUnits("450", 17), 
       confidence: ethers.parseUnits("1", 18), 
       signTime: (await ethers.provider.getBlock("latest")).timestamp, 
       signature: "0x5c2bcf2be9dfb9a1f9057392aeaebd0fbc1036bec5a700425c49069b12842038", 

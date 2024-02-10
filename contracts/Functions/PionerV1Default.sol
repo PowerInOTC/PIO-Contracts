@@ -26,7 +26,7 @@ contract PionerV1Default {
         kyc = PionerV1Compliance(_pionerV1Compliance);
     }
 
-
+/*  /// @dev Buyback a default positions against defaulting party DF for getDefaultAuctionPeriod() after liquidation
     function flashDefaultAuction(uint256 bContractId) public {
         utils.bContract memory bC = pio.getBContract(bContractId);
         utils.bOracle memory bO = pio.getBOracle(bC.oracleId);
@@ -34,16 +34,21 @@ contract PionerV1Default {
         require(bC.cancelTime + pio.getDefaultAuctionPeriod() > block.timestamp, "Default11");
         require(bC.state == 4, "Default12");
         require(kyc.kycCheck(msg.sender , bC.initiator), "Default12b");
-
+        uint256 notional = bC.price / 1e18 * bC.qty / 1e18;
+        
         if (bC.initiator == bC.pA) {
+            // inherit debts
             uint256 owedAmount = pio.getOwedAmount(bC.pA,bC.pB);
-            require(pio.getBalance(msg.sender) > owedAmount, "Default13");
-            pio.setBalance( owedAmount , bC.pA, bC.pB, true, false);
-            
-            pio.decreaseTotalOwedAmountPaid(bC.pA, owedAmount);
             pio.setOwedAmount(bC.pA, bC.pB, 0);
+            pio.setOwedAmount(bC.pA, msg.sender, owedAmount);
 
-            bC.price = ((1e18 - pio.getTotalShare()) * ( bO.dfA ) / 1e18 * bC.price / 1e18 * bC.qty / 1e18 ) / bC.qty / 1e18 ;
+            pio.setBalance( bO.dfA * notional , msg.sender, address(0), true, false);
+            pio.setBalance( bO.dfA * notional , msg.sender, address(0), false, true);
+
+            pio.setBalance( owedAmount , bC.pA, bC.pB, true, false);
+                        
+
+            bC.price = ((1e18 - pio.getTotalShare()) * ( bO.dfA ) / 1e18 * bC.price / 1e18  );
             pio.setBalance( utils.getNotional(bO, bC, true) + owedAmount , msg.sender, bC.pB, false, true);
             
             pio.setBalance( utils.getNotional(bO, bC, false) , bC.pB, bC.pA, false, true);
@@ -70,7 +75,7 @@ contract PionerV1Default {
         }
         pio.updateCumIm(bO, bC, bContractId);
         emit flashAuctionBuyBackEvent(bContractId);
-    }
+    } */
                  
     function settleAndLiquidate(uint256 bContractId) public{
         utils.bContract memory bC = pio.getBContract(bContractId);
@@ -82,59 +87,45 @@ contract PionerV1Default {
         uint256 ir = utils.calculateIr(bC.interestRate, (block.timestamp - bO.lastPriceUpdateTime), bO.lastPrice, bC.qty);
         uint256 deltaImA = utils.dynamicIm( bC.price, bO.lastPrice, bC.qty, bO.imA, bO.dfA);
         uint256 deltaImB = utils.dynamicIm( bC.price, bO.lastPrice, bC.qty, bO.imB, bO.dfB); 
-        uint256 owedAmount;
+        uint256 notional = bC.price / 1e18 * bC.qty / 1e18;
+        uint256 paid;
+        bool liquidated;
             
-        if (isNegative){
-            console.log(1);
-            owedAmount = pio.getTotalOwedAmount(bC.pA);
-            pio.setBalance( uPnl , bC.pA, bC.pB, false, false);
-            if( owedAmount != pio.getTotalOwedAmount(bC.pA) ){ // liquidate
-                if (pio.getOwedAmount(bC.pA,bC.pB) >= bO.imA * bO.lastPrice / 1e18 * bC.qty / 1e18){
-                    console.log(2);
-                    pio.decreaseTotalOwedAmount(bC.pA, bO.imA * bO.lastPrice / 1e18 * bC.qty / 1e18);
-                    pio.removeOwedAmount(bC.pB, bC.pA, bO.imA * bO.lastPrice / 1e18 * bC.qty / 1e18);
-                } else {
-                    console.log(3);
-                    pio.setBalance( bO.imA * bO.lastPrice / 1e18 * bC.qty / 1e18 - pio.getOwedAmount(bC.pA,bC.pB) , bC.pA, bC.pB, true, false);
-                    pio.decreaseTotalOwedAmount(bC.pA, pio.getOwedAmount(bC.pA,bC.pB));
-                    pio.setOwedAmount(bC.pA, bC.pB, 0);
-                }
-                pio.setBalance( uPnl - (bO.dfB + bO.imB + (bO.dfA * ( 1 - pio.getTotalShare())) / 1e18 ) * bO.lastPrice / 1e18 * bC.qty / 1e18, bC.pB, bC.pA, true, false);
-                pio.payAffiliates(( bO.dfA / 1e18 * bO.lastPrice / 1e18 * bC.qty / 1e18 + ir ) * pio.getTotalShare() , bC.frontEnd, bC.affiliate, bC.hedger);
+        if (isNegative){ // deltaIm down
+            if( uPnl > deltaImA){
+                paid = pio.setBalance( uPnl - deltaImA, bC.pA, bC.pB, false, false);
+                if( paid != uPnl - deltaImA){ liquidated = true; }
+            } else {
+                paid = pio.setBalance( deltaImA - uPnl, bC.pA, address(0), true, false);
+            }
+            if( liquidated ){ // liquidate
+                paid += bO.imA * notional;
+                if ( paid > uPnl){ pio.addBalance(bC.pA, paid - uPnl );} else { pio.addToOwed( uPnl - paid, bC.pA, bC.pB);}
+                pio.setBalance( paid + (bO.dfB + bO.imB + (bO.dfA * ( 1e18 - pio.getTotalShare())) / 1e18 ) * notional , bC.pB, address(0), true, false);
+                pio.payAffiliates(( bO.dfA * notional ) * pio.getTotalShare() , bC.frontEnd, bC.affiliate, bC.hedger);
 
                 bC.initiator = bC.pA;
                 bC.state = 4;
                 bC.cancelTime = block.timestamp;
                 bC.price = bO.lastPrice;
-                pio.decreaseOpenPositionNumber(bC.pA);
                 pio.decreaseOpenPositionNumber(bC.pB);
+                pio.decreaseOpenPositionNumber(bC.pA);
                 emit liquidatedEvent(bContractId);
-            } else { //settle
-                console.log(4);
+            } else { // settle
                 pio.payAffiliates((ir) * pio.getTotalShare() / 1e18, bC.frontEnd, bC.affiliate, bC.hedger);
-                pio.setBalance( deltaImA , bC.pA, bC.pB, true, false);
-                pio.setBalance( uPnl + deltaImB , bC.pB, bC.pA, true, false);
-                pio.paySponsor(msg.sender, bC.pA, bC.price, bO.lastPrice, bO.imA, true);
+                pio.setBalance( uPnl + deltaImB , bC.pB, address(0), true, false);
+                pio.paySponsor(msg.sender, bC.pA, bC.price, bO.lastPrice, bO.imA, false);
                 bC.price = bO.lastPrice ;
                 bC.openTime = bO.lastPriceUpdateTime ;
                 emit settledEvent(bContractId);
             }
-        } else {
-            owedAmount = pio.getTotalOwedAmount(bC.pB);
-            pio.setBalance( uPnl + deltaImB , bC.pB, bC.pA, false, false);
-            if( owedAmount != pio.getTotalOwedAmount(bC.pB) || deltaImB > pio.getBalance(bC.pB) ){ // liquidate
-                if (pio.getOwedAmount(bC.pB,bC.pA) >= bO.imB * bO.lastPrice / 1e18 * bC.qty / 1e18){
-                    console.log(5);
-                    pio.decreaseTotalOwedAmount(bC.pB, bO.imB * bO.lastPrice / 1e18 * bC.qty / 1e18);
-                    pio.removeOwedAmount(bC.pB, bC.pA, bO.imB * bO.lastPrice / 1e18 * bC.qty / 1e18);
-                } else {
-                    console.log(6);
-                    pio.setBalance( bO.imB * bO.lastPrice / 1e18 * bC.qty / 1e18 - pio.getOwedAmount(bC.pB,bC.pA) , bC.pB, address(0), true, false);
-                    pio.decreaseTotalOwedAmount(bC.pB, pio.getOwedAmount(bC.pB,bC.pA));
-                    pio.setOwedAmount(bC.pB, bC.pA, 0);
-                }
-                pio.setBalance( (bO.dfA + bO.imA + (bO.dfB * ( 1e18 - pio.getTotalShare())) / 1e18 ) * bO.lastPrice / 1e18 * bC.qty / 1e18, bC.pA, address(0), true, false);
-                pio.payAffiliates(( bO.dfB / 1e18 * bO.lastPrice / 1e18 * bC.qty / 1e18 + ir ) * pio.getTotalShare() , bC.frontEnd, bC.affiliate, bC.hedger);
+        } else { // deltaIm up
+            paid = pio.setBalance( uPnl + deltaImB, bC.pB, bC.pA, false, false);
+            if( paid != uPnl + deltaImB ){ // liquidate
+                if( paid > uPnl ){ paid += bO.imB * notional + paid - uPnl; } else { paid += bO.imB * notional; }
+                if ( paid > uPnl){ pio.addBalance(bC.pB, paid - uPnl );} else { pio.addToOwed( uPnl - paid, bC.pB, bC.pA);}
+                pio.setBalance( paid + (bO.dfA + bO.imA + (bO.dfB * ( 1e18 - pio.getTotalShare())) / 1e18 ) * notional , bC.pA, address(0), true, false);
+                pio.payAffiliates(( bO.dfB * notional ) * pio.getTotalShare() , bC.frontEnd, bC.affiliate, bC.hedger);
 
                 bC.initiator = bC.pB;
                 bC.state = 4;
@@ -143,11 +134,9 @@ contract PionerV1Default {
                 pio.decreaseOpenPositionNumber(bC.pA);
                 pio.decreaseOpenPositionNumber(bC.pB);
                 emit liquidatedEvent(bContractId);
-            } else {
-                console.log(7);
+            } else { // settle
                 pio.payAffiliates((ir) * pio.getTotalShare() / 1e18, bC.frontEnd, bC.affiliate, bC.hedger);
-                pio.setBalance( deltaImB , bC.pA, bC.pB, false, false);
-                pio.setBalance( uPnl - deltaImA , bC.pA, bC.pB, true, false);
+                pio.setBalance( uPnl - deltaImA , bC.pA, address(0), true, false);
                 pio.paySponsor(msg.sender, bC.pB, bC.price, bO.lastPrice, bO.imB, false);
                 bC.price = bO.lastPrice ;
                 bC.openTime = bO.lastPriceUpdateTime ;
@@ -156,12 +145,6 @@ contract PionerV1Default {
         }
         pio.updateCumIm(bO, bC, bContractId);
     }
-/*
-    function settleAndLiquidateMint() public{
-        //require(pio.getKycType(msg.sender) == 6, "Default21a");
-        uint bob = pio.getBalance(msg.sender);
-    } */
-
     
     
 }

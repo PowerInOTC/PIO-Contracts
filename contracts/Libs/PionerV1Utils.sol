@@ -139,10 +139,10 @@ library PionerV1Utils {
 
     function dynamicIm(uint256 price, uint256 lastPrice, uint256 qty, uint256 im, uint256 df) public pure returns(uint256)  { 
         if( price >= lastPrice ){
-            return( price * qty /1e18 * ( im + df ) /1e18 - lastPrice * qty /1e18 * ( im + df ) /1e18);
+            return( ( price - lastPrice )  * qty /1e18 * ( im + df ) /1e18);
         }
         else {
-            return( lastPrice * qty /1e18 * ( im + df ) /1e18 - price * qty  /1e18* ( im + df ) /1e18);
+            return( ( lastPrice - price )  * qty /1e18 * ( im + df ) /1e18);
         }
     }
 
