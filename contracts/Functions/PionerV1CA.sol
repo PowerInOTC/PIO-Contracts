@@ -109,10 +109,10 @@ contract PionerV1CA is PionerV1Storage {
     function updateCumIm(utils.bOracle memory bO, utils.bContract memory bC, uint256 bContractId) external onlyContracts { 
         if( bC.state == 2 || bC.state == 1){
             if(bC.pA != address(0) ){
-                cumImBalances[bC.pA] += utils.getIm(bO, true) * bC.price / 1e18 * bC.qty - bContractImBalances[bC.pA][bContractId] ;
+                cumImBalances[bC.pA] += utils.getIm(bO, true) * bC.price / 1e18 * bC.amount - bContractImBalances[bC.pA][bContractId] ;
             }
             if(bC.pB != address(0) ){
-                cumImBalances[bC.pB] += utils.getIm(bO, true) * bC.price / 1e18 * bC.qty - bContractImBalances[bC.pB][bContractId] ;
+                cumImBalances[bC.pB] += utils.getIm(bO, true) * bC.price / 1e18 * bC.amount - bContractImBalances[bC.pB][bContractId] ;
             }
         } else if ( bC.state == 3 || bC.state == 4 || bC.state == 4){
             if(bC.pA != address(0) ){

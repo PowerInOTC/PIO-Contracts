@@ -34,7 +34,7 @@ contract PionerV1Default {
         require(bC.cancelTime + pio.getDefaultAuctionPeriod() > block.timestamp, "Default11");
         require(bC.state == 4, "Default12");
         require(kyc.kycCheck(msg.sender , bC.initiator), "Default12b");
-        uint256 notional = bC.price / 1e18 * bC.qty / 1e18;
+        uint256 notional = bC.price / 1e18 * bC.amount / 1e18;
         
         if (bC.initiator == bC.pA) {
             // inherit debts
@@ -64,7 +64,7 @@ contract PionerV1Default {
             pio.decreaseTotalOwedAmountPaid(bC.pB, owedAmount);
             pio.setOwedAmount(bC.pB, bC.pA, 0);
 
-            bC.price = ((1e18 - pio.getTotalShare()) * ( bO.dfB ) / 1e18 * bC.price / 1e18 * bC.qty / 1e18 ) / bC.qty / 1e18 ;
+            bC.price = ((1e18 - pio.getTotalShare()) * ( bO.dfB ) / 1e18 * bC.price / 1e18 * bC.amount / 1e18 ) / bC.amount / 1e18 ;
             pio.setBalance( utils.getNotional(bO, bC, true) + owedAmount , msg.sender, bC.pA, false, true);
             
             pio.setBalance( utils.getNotional(bO, bC, false) , bC.pB, bC.pA, false, true);
@@ -83,11 +83,11 @@ contract PionerV1Default {
         require(kyc.getKycType(msg.sender) != 6, "Default21a");
         require(bC.state == 2, "Default21b");
         require( bO.lastPriceUpdateTime <= bO.maxDelay + block.timestamp, "Default22");
-        (uint256 uPnl, bool isNegative) = utils.calculateuPnl( bC.price, bO.lastPrice, bC.qty, bC.interestRate, bO.lastPriceUpdateTime, bC.isAPayingAPR );
-        uint256 ir = utils.calculateIr(bC.interestRate, (block.timestamp - bO.lastPriceUpdateTime), bO.lastPrice, bC.qty);
-        uint256 deltaImA = utils.dynamicIm( bC.price, bO.lastPrice, bC.qty, bO.imA, bO.dfA);
-        uint256 deltaImB = utils.dynamicIm( bC.price, bO.lastPrice, bC.qty, bO.imB, bO.dfB); 
-        uint256 notional = bC.price / 1e18 * bC.qty / 1e18;
+        (uint256 uPnl, bool isNegative) = utils.calculateuPnl( bC.price, bO.lastPrice, bC.amount, bC.interestRate, bO.lastPriceUpdateTime, bC.isAPayingAPR );
+        uint256 ir = utils.calculateIr(bC.interestRate, (block.timestamp - bO.lastPriceUpdateTime), bO.lastPrice, bC.amount);
+        uint256 deltaImA = utils.dynamicIm( bC.price, bO.lastPrice, bC.amount, bO.imA, bO.dfA);
+        uint256 deltaImB = utils.dynamicIm( bC.price, bO.lastPrice, bC.amount, bO.imB, bO.dfB); 
+        uint256 notional = bC.price / 1e18 * bC.amount / 1e18;
         uint256 paid;
         bool liquidated;
             

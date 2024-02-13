@@ -51,7 +51,7 @@ describe("PionerV1 Contract", function () {
     pionerV1Stable = await PionerV1Stable.deploy(pionerV1.target, pionerV1Compliance.target);
     PionerV1Oracle = await ethers.getContractFactory("PionerV1Close", {libraries: {PionerV1Utils: pionerV1Utils.target,},});
     pionerV1Oracle  = await PionerV1Close.deploy(pionerV1.target, pionerV1Compliance.target);
-    PionerV1Warper = await ethers.getContractFactory("PionerV1Warper");
+    PionerV1Warper = await ethers.getContractFactory("PionerV1Warper", {libraries: {PionerV1Utils: pionerV1Utils.target,},});
     pionerV1Warper = await PionerV1Warper.deploy(pionerV1.target, pionerV1Compliance.target, pionerV1Open.target ,pionerV1Close.target ,pionerV1Default.target, pionerV1Oracle.target );
     
     

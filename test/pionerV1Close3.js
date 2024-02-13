@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("PionerV1Close Contract", function () {
+describe("PionerV1Close Signatures Contract", function () {
   let FakeUSD, fakeUSD, PionerV1, pionerV1;
   let owner, addr1, addr2, addr3, balances, owed1, owed2;
 
@@ -65,8 +65,8 @@ describe("PionerV1Close Contract", function () {
     pionerV1Stable = await PionerV1Stable.deploy(pionerV1.target, pionerV1Compliance.target);
     PionerV1Oracle = await ethers.getContractFactory("PionerV1Oracle");
     pionerV1Oracle  = await PionerV1Oracle.deploy(pionerV1.target, pionerV1Compliance.target);
-    PionerV1Warper = await ethers.getContractFactory("PionerV1Warper", {libraries: {PionerV1Utils: pionerV1Utils.target,},});
-    pionerV1Warper = await PionerV1Warper.deploy(pionerV1.target, pionerV1Compliance.target, pionerV1Open.target ,pionerV1Close.target ,pionerV1Default.target, pionerV1Oracle.target );
+    PionerV1Warper = await ethers.getContractFactory("PionerV1Warper");
+    pionerV1Warper = await PionerV1Warper.deploy(pionerV1.target, pionerV1Compliance.target, pionerV1Open.target ,pionerV1Close.target ,pionerV1Default.target, pionerV1Oracle.target, {libraries: {PionerV1Utils: pionerV1Utils.target,},} );
     
     await pionerV1.connect(owner).setContactAddress(pionerV1Open.target,pionerV1Close.target,pionerV1Default.target,pionerV1Stable.target,pionerV1Compliance.target,pionerV1Oracle.target, pionerV1Warper.target );
     const mintAmount = ethers.parseUnits("10000", 18);
@@ -103,13 +103,13 @@ describe("PionerV1Close Contract", function () {
     const _issLong = true;
     const _bOracleId = oracleLength - BigInt(1);
     const _price = ethers.parseUnits("50", 18);
-    const _qty = ethers.parseUnits("10", 18);
+    const _amount = ethers.parseUnits("10", 18);
     const _interestRate = ethers.parseUnits("1", 17); 
     const _isAPayingAPR = true;
     const _frontEnd = owner.address;
     const _affiliate = owner.address;
 
-    await pionerV1Open.connect(addr1).openQuote(_issLong, _bOracleId, _price, _qty, _interestRate, _isAPayingAPR, _frontEnd, _affiliate);
+    await pionerV1Open.connect(addr1).openQuote(_issLong, _bOracleId, _price, _amount, _interestRate, _isAPayingAPR, _frontEnd, _affiliate);
 
     const _acceptPrice = ethers.parseUnits("50", 18);
     const _backendAffiliate = owner.address;
@@ -117,48 +117,105 @@ describe("PionerV1Close Contract", function () {
     await pionerV1Open.connect(addr2).acceptQuote(_bOracleId, _acceptPrice, _backendAffiliate);
   });
 
-  it("openCloseQuote with a valid signature", async function () {
+  it("openCloseQuote signature test", async function () {
 
     const initialBalanceAddr1 = await pionerV1.getBalance(addr1);
     const initialBalanceAddr2 = await pionerV1.getBalance(addr2);
 
     console.log("balances : ",BigInt(initialBalanceAddr1)/BigInt(1e18),BigInt(initialBalanceAddr2)/BigInt(1e18));
-
+      const domain = {
+        name: 'PionerV1Open',
+        version: '1.0',
+        chainId: 31337,
+        verifyingContract: pionerV1Open.target
+      };
+      
+    const types = {
+      Quote: [
+        { name: 'isLong', type: 'bool' },
+        { name: 'bOracleId', type: 'uint256' },
+        { name: 'price', type: 'uint256' },
+        { name: 'amount', type: 'uint256' },
+        { name: 'interestRate', type: 'uint256' },
+        { name: 'isAPayingAPR', type: 'bool' },
+        { name: 'frontEnd', type: 'address' },
+        { name: 'affiliate', type: 'address' },
+        { name: 'authorized', type: 'address' },
+        { name: 'nonce', type: 'uint256' }
+      ]
+    };
     const bContractLength = await pionerV1.getBContractLength();
     const _bContractId = bContractLength - BigInt(1);
     const bOracleLength = await pionerV1.getBOracleLength();
-
-    const _chainId = 31337 ;
-    const _contractAddress = pionerV1Open.target ;
-    const _issLong = true;
     const _bOracleId = bOracleLength - BigInt(1);
-    const _price = ethers.parseUnits("50", 18);
-    const _qty = ethers.parseUnits("10", 18);
-    const _interestRate = ethers.parseUnits("1", 17); 
-    const _isAPayingAPR = true;
-    const _frontEnd = owner.address;
-    const _affiliate = owner.address;
-    const _authorized = "0x0000000000000000000000000000000000000000"; ;
+    const value = {
+      isLong: true,
+      bOracleId: bOracleLength - BigInt(1),
+      price: ethers.parseUnits("50", 18),
+      amount: ethers.parseUnits("10", 18),
+      interestRate: ethers.parseUnits("1", 17),
+      isAPayingAPR: true,
+      frontEnd: owner.address,
+      affiliate: owner.address,
+      authorized: "0x0000000000000000000000000000000000000000",
+      nonce: 0
+    };
+
 
     await network.provider.send("evm_increaseTime", [1 * 24 * 60 * 60]);
     await network.provider.send("evm_mine");
-
-
-    const messageHash = ethers.solidityPackedKeccak256(
-        ["uint256", "address", "bool", "uint256", "uint256", "uint256", "uint256", "bool", "address", "address", "address"],
-        [_chainId, _contractAddress, _issLong, _bOracleId, _price, _qty, _interestRate, _isAPayingAPR, _frontEnd, _affiliate, _authorized]
-    );
-    const signature = await addr1.signMessage(ethers.toBeArray(messageHash));
-    console.log(addr1, "address");
+    const signOpenQuote = await addr1.signTypedData(domain, types, value);
     await expect(pionerV1Open.connect(addr1).openQuoteSigned(
-        _issLong, _bOracleId, _price, _qty, _interestRate, _isAPayingAPR, _frontEnd, _affiliate, _authorized, messageHash, signature
+      value,signOpenQuote, "0x0000000000000000000000000000000000000000"
     )).to.emit(pionerV1Open, "openQuoteSignedEvent");
-
     const _acceptPrice = ethers.parseUnits("50", 18);
     const _backendAffiliate = owner.address;
 
-    await pionerV1Open.connect(addr2).acceptQuote(_bOracleId, _acceptPrice, _backendAffiliate);
+    const newbContractLength = await pionerV1.getBContractLength();
+    const _newbContractId = newbContractLength - BigInt(1);
+    await pionerV1Open.connect(addr2).acceptQuote(_newbContractId, _acceptPrice, _backendAffiliate);
+    const types3 = {
+        OpenCloseQuote: [
+            { name: 'bContractId', type: 'uint256' },
+            { name: 'price', type: 'uint256' },
+            { name: 'amount', type: 'uint256' },
+            { name: 'limitOrStop', type: 'uint256' },
+            { name: 'expiry', type: 'uint256' },
+            { name: 'authorized', type: 'address' },
+            { name: 'nonce', type: 'uint256' }
+        ]};
 
+    const types4 = {
+        CancelCloseQuoteRequest: [
+            { name: 'targetHash', type: 'bytes' },
+            { name: 'nonce', type: 'uint256' }
+        ]};
+    
+    const openCloseQuoteValue = {
+        bContractId: _newbContractId,
+        price: ethers.parseUnits("600", 18),
+        amount: ethers.parseUnits("10", 18),
+        limitOrStop: 0, 
+        expiry: 100000000000, 
+        authorized: "0x0000000000000000000000000000000000000000", 
+        nonce: 0
+    };
+    
+    const signCloseQuote = await addr1.signTypedData(domain, types3, openCloseQuoteValue);
+    
+    const cancelCloseRequestValue = {
+        targetHash: signCloseQuote, 
+        nonce: 0
+    };
+    const getBCloseQuoteLength = await pionerV1.getBCloseQuoteLength();
+    console.log(getBCloseQuoteLength);
+    pionerV1Close.connect(addr2).openCloseQuoteSigned(openCloseQuoteValue,signCloseQuote); 
+    const getBCloseQuoteLength1 = await pionerV1.getBCloseQuoteLength();
+    console.log(BigInt(getBCloseQuoteLength1));
+
+    pionerV1Close.connect(addr2).acceptCloseQuote(_newbContractId, 0 , ethers.parseUnits("10", 18));
+    //const signCancelCloseQuote = await addr1.signTypedData(domain, CancelCloseQuoteRequest, cancelCloseRequestValue);
+    //pionerV1Warper.connect(addr2).warperCloseQuoteSignedAndAcceptClose( openCloseQuoteValue, signCloseQuote )
     const finalBalanceAddr1 = await pionerV1.getBalance(addr1);
     const finalBalanceAddr2 = await pionerV1.getBalance(addr2);
     const owedAmount1 = await pionerV1.getOwedAmount(addr1,addr2);
@@ -167,5 +224,9 @@ describe("PionerV1Close Contract", function () {
   });
 
 
+  });
 
-});
+
+
+
+

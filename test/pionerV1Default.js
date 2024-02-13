@@ -157,7 +157,7 @@ describe("PionerV1Close Contract", function () {
 
   });
 
-  it("Settelemnt Test PartyA", async function () {
+  it("Settlement Test PartyA", async function () {
     const e18 = BigInt(ethers.parseUnits("1", 18));
     const bContractLength = await pionerV1.getBContractLength();
     const bOracleLength = await pionerV1.getBOracleLength();

@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("PionerV1Close Contract", function () {
+describe("PionerV1Close Signatures Contract", function () {
   let FakeUSD, fakeUSD, PionerV1, pionerV1;
   let owner, addr1, addr2, addr3, balances, owed1, owed2;
 
@@ -65,8 +65,8 @@ describe("PionerV1Close Contract", function () {
     pionerV1Stable = await PionerV1Stable.deploy(pionerV1.target, pionerV1Compliance.target);
     PionerV1Oracle = await ethers.getContractFactory("PionerV1Oracle");
     pionerV1Oracle  = await PionerV1Oracle.deploy(pionerV1.target, pionerV1Compliance.target);
-    PionerV1Warper = await ethers.getContractFactory("PionerV1Warper", {libraries: {PionerV1Utils: pionerV1Utils.target,},});
-    pionerV1Warper = await PionerV1Warper.deploy(pionerV1.target, pionerV1Compliance.target, pionerV1Open.target ,pionerV1Close.target ,pionerV1Default.target, pionerV1Oracle.target );
+    PionerV1Warper = await ethers.getContractFactory("PionerV1Warper");
+    pionerV1Warper = await PionerV1Warper.deploy(pionerV1.target, pionerV1Compliance.target, pionerV1Open.target ,pionerV1Close.target ,pionerV1Default.target, pionerV1Oracle.target, {libraries: {PionerV1Utils: pionerV1Utils.target,},} );
     
     await pionerV1.connect(owner).setContactAddress(pionerV1Open.target,pionerV1Close.target,pionerV1Default.target,pionerV1Stable.target,pionerV1Compliance.target,pionerV1Oracle.target, pionerV1Warper.target );
     const mintAmount = ethers.parseUnits("10000", 18);
@@ -117,7 +117,74 @@ describe("PionerV1Close Contract", function () {
     await pionerV1Open.connect(addr2).acceptQuote(_bOracleId, _acceptPrice, _backendAffiliate);
   });
 
-  it("openCloseQuote with a valid signature", async function () {
+  it("openCloseQuote signature test", async function () {
+
+    const initialBalanceAddr1 = await pionerV1.getBalance(addr1);
+    const initialBalanceAddr2 = await pionerV1.getBalance(addr2);
+
+    console.log("balances : ",BigInt(initialBalanceAddr1)/BigInt(1e18),BigInt(initialBalanceAddr2)/BigInt(1e18));
+      const domain = {
+        name: 'PionerV1Open',
+        version: '1.0',
+        chainId: 31337,
+        verifyingContract: pionerV1Open.target
+      };
+    const types = {
+      Quote: [
+        { name: 'isLong', type: 'bool' },
+        { name: 'bOracleId', type: 'uint256' },
+        { name: 'price', type: 'uint256' },
+        { name: 'qty', type: 'uint256' },
+        { name: 'interestRate', type: 'uint256' },
+        { name: 'isAPayingAPR', type: 'bool' },
+        { name: 'frontEnd', type: 'address' },
+        { name: 'affiliate', type: 'address' },
+        { name: 'authorized', type: 'address' },
+        { name: 'nonce', type: 'uint256' }
+      ]
+    };
+    const bContractLength = await pionerV1.getBContractLength();
+    const _bContractId = bContractLength - BigInt(1);
+    const bOracleLength = await pionerV1.getBOracleLength();
+    const _bOracleId = bOracleLength - BigInt(1);
+    const value = {
+      isLong: true,
+      bOracleId: bOracleLength - BigInt(1),
+      price: ethers.parseUnits("46", 18),
+      qty: ethers.parseUnits("10", 18),
+      interestRate: ethers.parseUnits("1", 17),
+      isAPayingAPR: true,
+      frontEnd: owner.address,
+      affiliate: owner.address,
+      authorized: "0x0000000000000000000000000000000000000000",
+      nonce: 0
+    };
+
+
+    await network.provider.send("evm_increaseTime", [1 * 24 * 60 * 60]);
+    await network.provider.send("evm_mine");
+
+    const signOpenQuote = await addr1.signTypedData(domain, types, value);
+
+    await expect(pionerV1Open.connect(addr1).openQuoteSigned(
+      value,signOpenQuote, "0x0000000000000000000000000000000000000000"
+    )).to.emit(pionerV1Open, "openQuoteSignedEvent");
+
+    const _acceptPrice = ethers.parseUnits("50", 18);
+    const _backendAffiliate = owner.address;
+
+    const newbContractLength = await pionerV1.getBContractLength();
+    const _newbContractId = newbContractLength - BigInt(1);
+    await pionerV1Open.connect(addr2).acceptQuote(_newbContractId, _acceptPrice, _backendAffiliate);
+
+    const finalBalanceAddr1 = await pionerV1.getBalance(addr1);
+    const finalBalanceAddr2 = await pionerV1.getBalance(addr2);
+    const owedAmount1 = await pionerV1.getOwedAmount(addr1,addr2);
+    const owedAmount2 = await pionerV1.getOwedAmount(addr2,addr1);
+    console.log("balances : ",BigInt(finalBalanceAddr1)/BigInt(1e18),BigInt(finalBalanceAddr2)/BigInt(1e18), BigInt(owedAmount1)/BigInt(1e18), BigInt(owedAmount2)/BigInt(1e18));
+  });
+
+  it("acceptCloseQuote signature test", async function () {
 
     const initialBalanceAddr1 = await pionerV1.getBalance(addr1);
     const initialBalanceAddr2 = await pionerV1.getBalance(addr2);
@@ -147,7 +214,6 @@ describe("PionerV1Close Contract", function () {
     const _bContractId = bContractLength - BigInt(1);
     const bOracleLength = await pionerV1.getBOracleLength();
     const _bOracleId = bOracleLength - BigInt(1);
-    console.log(addr1.address, addr2.address);
     const value = {
       isLong: true,
       bOracleId: bOracleLength - BigInt(1),
@@ -168,13 +234,35 @@ describe("PionerV1Close Contract", function () {
     const signOpenQuote = await addr1.signTypedData(domain, types, value);
 
     await expect(pionerV1Open.connect(addr1).openQuoteSigned(
-      value,signOpenQuote
+      value,signOpenQuote, "0x0000000000000000000000000000000000000000"
     )).to.emit(pionerV1Open, "openQuoteSignedEvent");
+
+      const types2 = {
+        AcceptQuote: [
+            { name: 'bContractId', type: 'uint256' },
+            { name: 'acceptPrice', type: 'uint256' },
+            { name: 'backendAffiliate', type: 'address' },
+            { name: 'amount', type: 'uint256' },
+            { name: 'nonce', type: 'uint256' }
+        ]
+    };
 
     const _acceptPrice = ethers.parseUnits("50", 18);
     const _backendAffiliate = owner.address;
 
-    await pionerV1Open.connect(addr2).acceptQuote(_bOracleId, _acceptPrice, _backendAffiliate);
+    const newbContractLength = await pionerV1.getBContractLength();
+    const _newbContractId = newbContractLength - BigInt(1);
+
+    const value2 = {
+      bContractId: _newbContractId,
+      acceptPrice: _acceptPrice,
+      backendAffiliate: _backendAffiliate,
+      amount: 0,
+      nonce: 1
+      };
+
+    const signature2 = await addr2.signTypedData(domain, types2, value2);
+    await pionerV1Open.connect(addr2).acceptQuoteSigned(value2, signature2);
 
     const finalBalanceAddr1 = await pionerV1.getBalance(addr1);
     const finalBalanceAddr2 = await pionerV1.getBalance(addr2);
@@ -183,6 +271,87 @@ describe("PionerV1Close Contract", function () {
     console.log("balances : ",BigInt(finalBalanceAddr1)/BigInt(1e18),BigInt(finalBalanceAddr2)/BigInt(1e18), BigInt(owedAmount1)/BigInt(1e18), BigInt(owedAmount2)/BigInt(1e18));
   });
 
+  it("openCloseQuote signature test", async function () {
 
+    const initialBalanceAddr1 = await pionerV1.getBalance(addr1);
+    const initialBalanceAddr2 = await pionerV1.getBalance(addr2);
+
+    console.log("balances : ",BigInt(initialBalanceAddr1)/BigInt(1e18),BigInt(initialBalanceAddr2)/BigInt(1e18));
+    const domain = {
+      name: 'PionerV1Open',
+      version: '1.0',
+      chainId: 31337,
+      verifyingContract: pionerV1Open.target
+    };
+    const types = {
+      Quote: [
+        { name: 'isLong', type: 'bool' },
+        { name: 'bOracleId', type: 'uint256' },
+        { name: 'price', type: 'uint256' },
+        { name: 'qty', type: 'uint256' },
+        { name: 'interestRate', type: 'uint256' },
+        { name: 'isAPayingAPR', type: 'bool' },
+        { name: 'frontEnd', type: 'address' },
+        { name: 'affiliate', type: 'address' },
+        { name: 'authorized', type: 'address' },
+        { name: 'nonce', type: 'uint256' }
+      ]
+    };
+
+    const types2 = { CancelRequestSign: [
+      { name: 'orderHash', type: 'bytes' }, 
+      { name: 'nonce', type: 'uint256' }
+    ] }
+  
+
+    const bContractLength = await pionerV1.getBContractLength();
+    const _bContractId = bContractLength - BigInt(1);
+    const bOracleLength = await pionerV1.getBOracleLength();
+    const _bOracleId = bOracleLength - BigInt(1);
+    const value = {
+      isLong: true,
+      bOracleId: bOracleLength - BigInt(1),
+      price: ethers.parseUnits("47", 18),
+      qty: ethers.parseUnits("10", 18),
+      interestRate: ethers.parseUnits("1", 17),
+      isAPayingAPR: true,
+      frontEnd: owner.address,
+      affiliate: owner.address,
+      authorized: "0x0000000000000000000000000000000000000000",
+      nonce: 0
+    };
+
+    const signOpenQuote = await addr1.signTypedData(domain, types, value);
+
+    const cancelRequestSignValue = {
+        orderHash: signOpenQuote,
+        nonce: 0
+    };
+
+    const openQuoteSign = await addr1.signTypedData(domain, types2, cancelRequestSignValue);
+
+    pionerV1Open.connect(addr1).cancelSignedMessageOpen( cancelRequestSignValue, openQuoteSign ); 
+
+
+    await ethers.provider.send("evm_increaseTime", [24 * 60 * 60]);
+    await ethers.provider.send("evm_mine", []);
+
+    await expect(pionerV1Open.connect(addr1).openQuoteSigned(
+      value,signOpenQuote, "0x0000000000000000000000000000000000000000"
+    )).to.be.revertedWith("Quote expired");
+
+    const _acceptPrice = ethers.parseUnits("50", 18);
+    const _backendAffiliate = owner.address;
+
+    const newbContractLength = await pionerV1.getBContractLength();
+    const _newbContractId = newbContractLength - BigInt(1);
+    await pionerV1Open.connect(addr2).acceptQuote(_newbContractId, _acceptPrice, _backendAffiliate);
+
+    const finalBalanceAddr1 = await pionerV1.getBalance(addr1);
+    const finalBalanceAddr2 = await pionerV1.getBalance(addr2);
+    const owedAmount1 = await pionerV1.getOwedAmount(addr1,addr2);
+    const owedAmount2 = await pionerV1.getOwedAmount(addr2,addr1);
+    console.log("balances : ",BigInt(finalBalanceAddr1)/BigInt(1e18),BigInt(finalBalanceAddr2)/BigInt(1e18), BigInt(owedAmount1)/BigInt(1e18), BigInt(owedAmount2)/BigInt(1e18));
+  });
 
 });

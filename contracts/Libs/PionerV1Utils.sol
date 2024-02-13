@@ -37,7 +37,7 @@ library PionerV1Utils {
         uint256 oracleId;
         address initiator;
         uint256 price;
-        uint256 qty;
+        uint256 amount;
         uint256 interestRate; 
         bool isAPayingAPR;
         uint256 openTime;
@@ -71,7 +71,7 @@ library PionerV1Utils {
     struct bCloseQuote { // exit quote
         uint256[] bContractIds;
         uint256[] price;
-        uint256[] qty;
+        uint256[] amount;
         uint256[] limitOrStop; // if non 0, quotePrice
         uint256[] expiry;
         address initiator; 
@@ -116,8 +116,8 @@ library PionerV1Utils {
         /*
         // CCP
         address ccpDAO;
-        uint256 longQty;
-        uint256 shortQty;
+        uint256 longamount;
+        uint256 shortamount;
         uint256 avgLongOpenPrice;
         uint256 avgShortOpenPrice;
         uint256 maxLongOI;
@@ -125,6 +125,66 @@ library PionerV1Utils {
         uint256 ir;
         uint256 volatilityThreshold; // not add to owed if pass that threshold
         */
+    }
+
+    struct  OpenQuoteSign {
+        bool isLong;
+        uint256 bOracleId;
+        uint256 price;
+        uint256 amount;
+        uint256 interestRate;
+        bool isAPayingAPR;
+        address frontEnd;
+        address affiliate;
+        address authorized;
+        uint256 nonce; 
+    }
+
+    struct AcceptQuoteSign {
+        uint256 bContractId;
+        uint256 acceptPrice;
+        address backendAffiliate;
+        uint256 amount;
+        uint256 nonce; 
+    }
+
+    struct CancelRequestSign {
+        bytes orderHash; 
+        uint256 nonce;
+    }
+
+    struct OpenCloseQuote {
+        uint256 bContractId;
+        uint256 price;
+        uint256 amount;
+        uint256 limitOrStop;
+        uint256 expiry;
+        address authorized;
+        uint256 nonce;
+    }
+
+
+    struct CancelCloseRequest {
+        bytes targetHash;
+        uint256 nonce;
+    }
+
+        struct OracleSwapWithSignature {
+        uint256 x;
+        uint8 parity;
+        uint256 maxConfidence;
+        bytes32 asset1;
+        bytes32 asset2;
+        uint256 maxDelay;
+        uint256 imA;
+        uint256 imB;
+        uint256 dfA;
+        uint256 dfB;
+        uint256 expiryA;
+        uint256 expiryB;
+        uint256 timeLockA;
+        bytes signatureHashOpenQuote;
+        uint256 nonce;
     }
 
     function int64ToUint256(int64 value) public pure returns (uint256) {
@@ -137,21 +197,30 @@ library PionerV1Utils {
     }
 
 
-    function dynamicIm(uint256 price, uint256 lastPrice, uint256 qty, uint256 im, uint256 df) public pure returns(uint256)  { 
+    function bytesToUint256(bytes memory b) public pure returns (uint256 result) {
+    require(b.length >= 32, "Input too short");
+    
+    assembly {
+        result := mload(add(b, 32)) 
+    }
+}
+
+
+    function dynamicIm(uint256 price, uint256 lastPrice, uint256 amount, uint256 im, uint256 df) public pure returns(uint256)  { 
         if( price >= lastPrice ){
-            return( ( price - lastPrice )  * qty /1e18 * ( im + df ) /1e18);
+            return( ( price - lastPrice )  * amount /1e18 * ( im + df ) /1e18);
         }
         else {
-            return( ( lastPrice - price )  * qty /1e18 * ( im + df ) /1e18);
+            return( ( lastPrice - price )  * amount /1e18 * ( im + df ) /1e18);
         }
     }
 
     // return true if negative
-    function calculateuPnl(uint256 price, uint256 lastPrice, uint256 qty, uint256 interestRate, uint256 lastPriceUpdateTime, bool isPayingIr) public view returns (uint256, bool) {
-        uint256 ir = calculateIr(interestRate, (block.timestamp - lastPriceUpdateTime), lastPrice, qty);
+    function calculateuPnl(uint256 price, uint256 lastPrice, uint256 amount, uint256 interestRate, uint256 lastPriceUpdateTime, bool isPayingIr) public view returns (uint256, bool) {
+        uint256 ir = calculateIr(interestRate, (block.timestamp - lastPriceUpdateTime), lastPrice, amount);
         uint256 pnl;
         if (lastPrice >= price) {
-            pnl = ((lastPrice - price) * qty) / 1e18;
+            pnl = ((lastPrice - price) * amount) / 1e18;
             if (isPayingIr) {
                 if (pnl >= ir) {
                     return (pnl - ir, false);
@@ -162,7 +231,7 @@ library PionerV1Utils {
                 return (pnl + ir, false);
             }
         } else {
-            pnl = ((price - lastPrice) * qty) / 1e18;
+            pnl = ((price - lastPrice) * amount) / 1e18;
             if (isPayingIr) {
                 return (pnl - ir, true);
             } else {
@@ -171,16 +240,16 @@ library PionerV1Utils {
         }
     }
 
-    function calculateIr( uint256 rate, uint256 time, uint256 price, uint256 qty) public pure returns(uint256){
-        return( rate * time * price / 1e18 * qty / 1e18) / 31536000;
+    function calculateIr( uint256 rate, uint256 time, uint256 price, uint256 amount) public pure returns(uint256){
+        return( rate * time * price / 1e18 * amount / 1e18) / 31536000;
     }
 
     // getNotional(_bOracle, _bContract, true);
     function getNotional(bOracle memory bO, bContract memory bC, bool isA) public pure returns(uint256) {
         if (isA){
-            return(( bO.imA + bO.dfA) * bC.price / 1e18 * bC.qty / 1e18 );
+            return(( bO.imA + bO.dfA) * bC.price / 1e18 * bC.amount / 1e18 );
         } else{
-            return(( bO.imB + bO.dfB) * bC.price / 1e18 * bC.qty / 1e18 );
+            return(( bO.imB + bO.dfB) * bC.price / 1e18 * bC.amount / 1e18 );
         }
     }
 
@@ -193,26 +262,5 @@ library PionerV1Utils {
             }
         }
     }
-    /// @dev  EIP-155
-    function verifySignature(
-        bytes32 messageHash,
-        bytes memory signature
-    ) public pure returns (address) {
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-
-        require(signature.length == 65, "Invalid signature length");
-
-        assembly {
-            r := mload(add(signature, 32))
-            s := mload(add(signature, 64))
-            v := byte(0, mload(add(signature, 96))) 
-        }
-        if (v < 27) v += 27;
-
-        require(v == 27 || v == 28, "Invalid signature version");
-
-        return ecrecover(messageHash, v, r, s);
-    }
+    
 }

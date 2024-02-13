@@ -362,8 +362,28 @@ contract PionerV1Storage is MuonClientBase{
         gracePeriodLockedWithdrawBalances[user] -= amount;
     }
 
+    mapping(bytes => mapping( address => uint256)) public cancelledOpenQuotes;
+    mapping(bytes => mapping( address => uint256)) public cancelledCloseQuotes;
 
-        function getAllStateVariables() public view returns (
+    function getCancelledOpenQuotes(bytes calldata id, address target ) external view returns(uint256){
+        return( cancelledOpenQuotes[id][target]);
+    }
+
+    function setCancelledOpenQuotes(bytes calldata id, address target , uint256 value ) external onlyContracts {
+        cancelledOpenQuotes[id][target] = value;
+    }
+
+
+    function getCancelledCloseQuotes(bytes calldata id, address target  ) external view returns(uint256){
+        return( cancelledCloseQuotes[id][target]);
+    }
+
+    function setCancelledCloseQuotes(bytes calldata id, address target , uint256 value ) external onlyContracts {
+        cancelledCloseQuotes[id][target] = value;
+    }
+
+
+    function getAllStateVariables() public view returns (
         uint256 minNotional,
         uint256 frontendShare,
         uint256 affiliationShare,
