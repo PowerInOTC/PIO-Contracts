@@ -18,7 +18,6 @@ contract PionerV1CA is PionerV1Storage {
     function setBalance(uint256 amount, address target, address receiver, bool sign, bool revertMode) external onlyContracts returns(uint256) {
         if (sign){
             balances[target] += payOwed( amount, target);
-            
             return(amount);
         } else {
             if ( amount >= balances[target]){

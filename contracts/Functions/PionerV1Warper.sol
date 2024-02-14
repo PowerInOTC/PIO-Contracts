@@ -54,7 +54,7 @@ contract PionerV1Warper is EIP712 {
 
     function warperCloseQuoteSignedAndAcceptClose( utils.OpenCloseQuote calldata quote, bytes calldata signHash ) public {
         close.openCloseQuoteSigned( quote, signHash ); 
-        close.acceptCloseQuote(quote.bContractId, 0 , quote.amount );
+        close.acceptCloseQuote(pio.getBCloseQuoteLength() - 1, 0 , quote.amount );
     }
     
 

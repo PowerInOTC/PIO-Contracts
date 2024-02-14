@@ -207,20 +207,21 @@ describe("PionerV1Close Signatures Contract", function () {
         targetHash: signCloseQuote, 
         nonce: 0
     };
-    const getBCloseQuoteLength = await pionerV1.getBCloseQuoteLength();
-    console.log(getBCloseQuoteLength);
-    pionerV1Close.connect(addr2).openCloseQuoteSigned(openCloseQuoteValue,signCloseQuote); 
-    const getBCloseQuoteLength1 = await pionerV1.getBCloseQuoteLength();
-    console.log(BigInt(getBCloseQuoteLength1));
 
-    pionerV1Close.connect(addr2).acceptCloseQuote(_newbContractId, 0 , ethers.parseUnits("10", 18));
+    //pionerV1Close.connect(addr2).openCloseQuoteSigned(openCloseQuoteValue,signCloseQuote); 
+    const getBCloseQuoteLength1 = await pionerV1.getBCloseQuoteLength();
+    const _newbCloseQuoteId = getBCloseQuoteLength1 - BigInt(1);
+
+    //pionerV1Close.connect(addr2).acceptCloseQuote(0, 0 , ethers.parseUnits("10", 18));
     //const signCancelCloseQuote = await addr1.signTypedData(domain, CancelCloseQuoteRequest, cancelCloseRequestValue);
-    //pionerV1Warper.connect(addr2).warperCloseQuoteSignedAndAcceptClose( openCloseQuoteValue, signCloseQuote )
-    const finalBalanceAddr1 = await pionerV1.getBalance(addr1);
-    const finalBalanceAddr2 = await pionerV1.getBalance(addr2);
+    pionerV1Warper.connect(addr2).warperCloseQuoteSignedAndAcceptClose( openCloseQuoteValue, signCloseQuote );
+    const bbob = await pionerV1.getBalance(addr1);
+
+    const bob1 = await pionerV1.getBalance(addr1);
+    const bob2 = await pionerV1.getBalance(addr2);
     const owedAmount1 = await pionerV1.getOwedAmount(addr1,addr2);
     const owedAmount2 = await pionerV1.getOwedAmount(addr2,addr1);
-    console.log("balances : ",BigInt(finalBalanceAddr1)/BigInt(1e18),BigInt(finalBalanceAddr2)/BigInt(1e18), BigInt(owedAmount1)/BigInt(1e18), BigInt(owedAmount2)/BigInt(1e18));
+    console.log("balances : ",BigInt(bob1)/BigInt(1e18),BigInt(bob2)/BigInt(1e18), BigInt(owedAmount1)/BigInt(1e18), BigInt(owedAmount2)/BigInt(1e18));
   });
 
 

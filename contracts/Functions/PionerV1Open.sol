@@ -67,13 +67,13 @@ contract PionerV1Open  is EIP712  {
             openQuoteSign.authorized,
             openQuoteSign.nonce
             ));
-        
+
         bytes32 hash = _hashTypedDataV4(structHash);
         address signer = ECDSA.recover(hash, signHash);
-        require((pio.getCancelledOpenQuotes(signHash, signer)  + pio.getCancelTimeBuffer()) <= block.timestamp || pio.getCancelledOpenQuotes(signHash, signer)  == 0, "Quote expired");
+        require((pio.getCancelledOpenQuotes(signHash, signer)  + pio.getCancelTimeBuffer()) >= block.timestamp || pio.getCancelledOpenQuotes(signHash, signer)  == 0, "Quote expired");
         pio.setCancelledOpenQuotes(signHash, signer, 1) ;
         require(openQuoteSign.authorized == address(0) || signer == openQuoteSign.authorized, "Invalid signature or unauthorized");
-
+        console.log(1);
         utils.bContract memory bC = pio.getBContract(pio.getBContractLength());
         utils.bOracle memory bO = pio.getBOracle(openQuoteSign.bOracleId);
 

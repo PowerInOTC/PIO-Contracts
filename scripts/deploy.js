@@ -16,7 +16,15 @@ async function main() {
     }
   }
 
-  console.log("Deploying contracts with the account:", owner.address);
+
+  const SchnorrSECP256K1VerifierV2 = await hre.ethers.getContractFactory("SchnorrSECP256K1VerifierV2");
+  const schnorrSECP256K1VerifierV2 = await SchnorrSECP256K1VerifierV2.deploy();
+  await schnorrSECP256K1VerifierV2.waitForDeployment();
+
+  // Deploy MuonClientBase
+  const MuonClientBase = await hre.ethers.getContractFactory("MuonClientBase");
+  const muonClientBase = await MuonClientBase.deploy();
+  await muonClientBase.waitForDeployment();
 
   // Deploy PionerV1Utils
   const PionerV1Utils = await hre.ethers.getContractFactory("PionerV1Utils");
@@ -98,11 +106,7 @@ async function main() {
   await pionerV1Oracle.waitForDeployment();
 
   // Deploy PionerV1Default
-  const PionerV1Warper = await hre.ethers.getContractFactory("PionerV1Warper", {
-    libraries: {
-      PionerV1Utils: pionerV1Utils.target,
-    },
-  });
+  const PionerV1Warper = await hre.ethers.getContractFactory("PionerV1Warper");
   const pionerV1Warper = await PionerV1Warper.deploy(pionerV1.target, pionerV1Compliance.target, pionerV1Open.target ,pionerV1Close.target ,pionerV1Default.target, pionerV1Oracle.target);
   await pionerV1Warper.waitForDeployment();
 

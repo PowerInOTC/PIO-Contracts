@@ -186,10 +186,6 @@ contract PionerV1Storage is MuonClientBase{
         return balances[user];
     }
 
-     function getBalances(address user, address user2, address user3) external view returns (uint256,uint256,uint256) {
-        return (balances[user] / 1e18,balances[user2]/ 1e18,balances[user3]/ 1e18);
-    }
-
     function getOpenPositionNumber(address user) external view returns (uint256) {
         return openPositionNumbers[user];
     }

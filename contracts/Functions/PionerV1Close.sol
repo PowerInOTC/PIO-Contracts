@@ -65,7 +65,7 @@ contract PionerV1Close is EIP712 {
         ));
         bytes32 hash = _hashTypedDataV4(structHash);
         address signer = ECDSA.recover(hash, signHash);
-        require((pio.getCancelledCloseQuotes(signHash, signer) + pio.getCancelTimeBuffer()) <= block.timestamp || pio.getCancelledCloseQuotes(signHash, signer) == 0, "Quote expired");
+        require((pio.getCancelledCloseQuotes(signHash, signer) + pio.getCancelTimeBuffer()) >= block.timestamp || pio.getCancelledCloseQuotes(signHash, signer) == 0, "Quote expired");
         pio.setCancelledCloseQuotes(signHash, signer, block.timestamp - pio.getCancelTimeBuffer() - 1);
 
         require(signer == quote.authorized || quote.authorized == address(0), "Invalid signature or unauthorized");
@@ -137,9 +137,8 @@ contract PionerV1Close is EIP712 {
     
     function acceptCloseQuote( uint256 bCloseQuoteId, uint256 index, uint256 amount ) public {
         utils.bCloseQuote memory _bCloseQuote = pio.getBCloseQuote(bCloseQuoteId);
-        utils.bContract memory bC = pio.getBContract(_bCloseQuote.bContractIds[index]);
+        utils.bContract memory bC = pio.getBContract(_bCloseQuote.bContractIds[0]);
         utils.bOracle memory bO = pio.getBOracle(bC.oracleId);
-        
         require(index < _bCloseQuote.bContractIds.length, "Close21");
         require( (_bCloseQuote.state == 1 && _bCloseQuote.expiry[index] > block.timestamp ) 
         || ( _bCloseQuote.state == 1 && ( _bCloseQuote.cancelTime + pio.getCancelTimeBuffer() ) > block.timestamp), "Close23");
@@ -167,7 +166,6 @@ contract PionerV1Close is EIP712 {
         }
         require( amount <= bC.amount + pio.getMinNotional(), "Close210");
         require( amount >= pio.getMinNotional() / bC.amount / 1e18, "Close211");
-
         closePosition(bC, bO, _bCloseQuote.bContractIds[index], uPnl, isNegative, amount, _bCloseQuote.price[index]);
         _bCloseQuote.amount[index] -= amount;
         pio.setBCloseQuote(bCloseQuoteId, _bCloseQuote);
@@ -255,7 +253,7 @@ contract PionerV1Close is EIP712 {
   }    
 
   function closePosition(utils.bContract memory bC, utils.bOracle memory bO, uint256 bContractId, uint256 toPay, bool isNegative, uint256 amount, uint256 price) internal{ 
-      uint256 ir = utils.calculateIr(bC.interestRate, (block.timestamp - bC.openTime ), price, amount);
+      uint256 ir = utils.calculateIr(bC.interestRate, (block.timestamp - bC.openTime ), price, amount) * pio.getTotalShare()  /1e18;
       uint256 notional = bC.price * amount / 1e18;
       uint256 collatRequirA = ( bO.imA + bO.dfA) * notional / 1e18;
       uint256 collatRequirB = ( bO.imB + bO.dfB) * notional / 1e18;
@@ -263,32 +261,36 @@ contract PionerV1Close is EIP712 {
       require(bO.maxDelay + block.timestamp >= bO.lastPriceUpdateTime, "Close51");
       if(isNegative){
         if( toPay >= collatRequirA){
-            paid = pio.setBalance( toPay - collatRequirA , bC.pA, bC.pB, false, false);
+            paid = pio.setBalance( toPay - collatRequirA , bC.pA, bC.pB, false, false) + collatRequirA;
             pio.addToOwed( toPay - paid, bC.pA, bC.pB);
         } else {
             paid = pio.setBalance( collatRequirA - toPay, bC.pA, address(0), true, false);
-        }
-          pio.payAffiliates( ir * pio.getTotalShare() /1e18, bC.frontEnd, bC.frontEnd, bC.hedger);
-          pio.setBalance( paid + collatRequirB - (  ir * pio.getTotalShare()/1e18 ) , bC.pB, address(0), true, false);
+            paid = toPay;
+        }  
+          if(ir <= paid + collatRequirB ){
+            pio.payAffiliates( ir, bC.frontEnd, bC.frontEnd, bC.hedger);
+            pio.setBalance( paid + collatRequirB - ir  , bC.pB, address(0), true, false);
+          }
+          
       }
       else{
         if(toPay >= collatRequirB ){
-            paid = pio.setBalance( toPay - collatRequirB, bC.pB, bC.pA, false, false);
+            paid = pio.setBalance( toPay - collatRequirB, bC.pB, bC.pA, false, false) + collatRequirB;
             pio.addToOwed( toPay - paid, bC.pB, bC.pA);
         } else {
             paid = pio.setBalance( collatRequirB - toPay, bC.pB, address(0), true, false);
+            paid = toPay;
         }
-          pio.payAffiliates( ir * pio.getTotalShare() /1e18, bC.frontEnd, bC.frontEnd, bC.hedger);
-          pio.setBalance( paid + collatRequirA - ( ir * pio.getTotalShare()  /1e18 ) , bC.pA, address(0), true, false);
-
-          
+          if(ir <= paid + collatRequirA  ){
+            pio.payAffiliates( ir , bC.frontEnd, bC.frontEnd, bC.hedger);
+            pio.setBalance( paid + collatRequirA - ( ir  ) , bC.pA, address(0), true, false);
+          } 
       }
       bC.amount -= amount;
-
       if( bC.amount == 0){
           bC.state = 3;
-          pio.decreaseOpenPositionNumber(msg.sender);
-          console.log("contract closed");
+          pio.decreaseOpenPositionNumber(bC.pA);
+          pio.decreaseOpenPositionNumber(bC.pB);
       }
       pio.setBContract(bContractId, bC);
     }
@@ -298,7 +300,7 @@ contract PionerV1Close is EIP712 {
         utils.bCloseQuote memory _bCloseQuote = pio.getBCloseQuote(bCloseQuoteId);
         require(_bCloseQuote.state != 4, "Quote already canceled");
         _bCloseQuote.state = 4;
-        _bCloseQuote.cancelTime = block.timestamp;
+            _bCloseQuote.cancelTime = block.timestamp;
         pio.setBCloseQuote(bCloseQuoteId, _bCloseQuote);
         emit cancelOpenCloseQuoteContractEvent(bCloseQuoteId);
     }
