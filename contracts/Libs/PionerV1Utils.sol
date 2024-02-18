@@ -113,6 +113,7 @@ library PionerV1Utils {
         address kycAddress; 
         bool isPaused;
         uint256 deployTime;
+        uint256 marketCloseFee;
         /*
         // CCP
         address ccpDAO;
@@ -163,13 +164,18 @@ library PionerV1Utils {
         uint256 nonce;
     }
 
+    struct CloseQuoteSignature {
+        uint256 bCloseQuoteId;
+        uint256 index;
+        uint256 nonce;
+    }
 
     struct CancelCloseRequest {
         bytes targetHash;
         uint256 nonce;
     }
 
-        struct OracleSwapWithSignature {
+    struct OracleSwapWithSignature {
         uint256 x;
         uint8 parity;
         uint256 maxConfidence;
@@ -185,6 +191,22 @@ library PionerV1Utils {
         uint256 timeLockA;
         bytes signatureHashOpenQuote;
         uint256 nonce;
+    }
+
+    struct bContractIr {
+        uint256 flatRateA;
+        uint256 flatRateB;
+        uint256 payementFrequency;
+        uint256 caps;
+        uint256 floor;
+    }
+
+    struct boracleIr {
+        bytes32 assetA;
+        bytes32 assetB;
+        bytes32 irA;
+        bytes32 irB;
+        uint256 benchMarkMethod;
     }
 
     function int64ToUint256(int64 value) public pure returns (uint256) {

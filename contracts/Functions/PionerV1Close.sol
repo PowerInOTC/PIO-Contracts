@@ -175,7 +175,24 @@ contract PionerV1Close is EIP712 {
     }    
 
     
+
+    function closeMarketSign(utils.CloseQuoteSignature calldata closeQuote, bytes calldata signature) public {
+        bytes32 structHash = keccak256(abi.encode(
+            closeQuote.bCloseQuoteId,
+            closeQuote.index,
+            closeQuote.nonce
+        ));
+
+        bytes32 hash = _hashTypedDataV4(structHash);
+        address signer = ECDSA.recover(hash, signature);
+        closeMarketCore( closeQuote.bCloseQuoteId, closeQuote.index, signer);
+    }
+
     function closeMarket(uint256 bCloseQuoteId, uint256 index) public {
+        closeMarketCore( bCloseQuoteId, index, msg.sender);
+    }
+    
+    function closeMarketCore(uint256 bCloseQuoteId, uint256 index, address target) internal {
         utils.bCloseQuote memory _bCloseQuote = pio.getBCloseQuote(bCloseQuoteId);
         utils.bContract memory bC = pio.getBContract(_bCloseQuote.bContractIds[index]);
         utils.bOracle memory bO = pio.getBOracle(bC.oracleId);
@@ -186,20 +203,20 @@ contract PionerV1Close is EIP712 {
         require(bC.state == 2, "Close34");
         require(_bCloseQuote.expiry[index] >= block.timestamp, "Close34a");
         require( bO.lastPriceUpdateTime <= bO.maxDelay + block.timestamp, "Close34c" );
-        require(block.timestamp - bC.openTime > bO.maxDelay, "Close35"); 
-        require( _bCloseQuote.initiator == msg.sender, "Close36");
+        require( block.timestamp - bC.openTime > bO.maxDelay, "Close35"); 
+        require( _bCloseQuote.initiator == target, "Close36");
         require( _bCloseQuote.limitOrStop[index] == 1, "Close37");
         require(_bCloseQuote.openTime + pio.getCancelTimeBuffer() <= block.timestamp, "Close38");
         uint256 bidAsk;
-        if(msg.sender == bC.pA ){ bidAsk = bO.lastAsk; } else { bidAsk = bO.lastBid;}
+        if(target == bC.pA ){ bidAsk = bO.lastAsk; } else { bidAsk = bO.lastBid;}
 
         (uint256 uPnl, bool isNegative) = utils.calculateuPnl( bC.price, _bCloseQuote.price[index], bC.amount, bC.interestRate, bC.openTime, bC.isAPayingAPR );
-
-        if (msg.sender == bC.pA){
+    
+        if (target == bC.pA){
             require( _bCloseQuote.price[index] <= bidAsk, "Close310");
         }
         else{
-            require(msg.sender == bC.pB, "Close311");
+            require(target == bC.pB, "Close311");
             require( _bCloseQuote.price[index] >= bidAsk, "Close312");
         }
         closePosition(bC, bO, _bCloseQuote.bContractIds[index], uPnl, isNegative, _bCloseQuote.amount[index], _bCloseQuote.price[index]);
