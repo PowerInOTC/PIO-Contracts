@@ -21,12 +21,20 @@ contract PionerV1CA is PionerV1Storage {
             return(amount);
         } else {
             if ( amount >= balances[target]){
-                if (revertMode){
+                balances[target] += gracePeriodLockedWithdrawBalances[target];
+                gracePeriodLockedWithdrawBalances[target] = 0;
+                gracePeriodLockedTime[target] = block.timestamp;
+                if ( amount >= balances[target]){
+                    if (revertMode){
                     revert("Not enough balance");
+                    }
+                    uint256 temp = balances[target];
+                    balances[target] = 0;
+                    return(temp);
+                } else {
+                    balances[target] -= amount;
+                    return(amount);
                 }
-                uint256 temp = balances[target];
-                balances[target] = 0;
-                return(temp);
             } else {
                 balances[target] -= amount;
                 return(amount);
@@ -78,6 +86,7 @@ contract PionerV1CA is PionerV1Storage {
     function claimOwed(address target, address receiver) public {
         balances[target] += gracePeriodLockedWithdrawBalances[target];
         gracePeriodLockedWithdrawBalances[target] = 0;
+        gracePeriodLockedTime[target] = block.timestamp;
         balances[target] = payOwed(balances[target], target);
 
         uint256 owedAmount = owedAmounts[target][receiver];

@@ -69,5 +69,96 @@ describe("PionerV1 Contract", function () {
 
   });
 
+  it("openCloseQuote signature test", async function () {
+
+    const initialBalanceAddr1 = await pionerV1.getBalance(addr1);
+    const initialBalanceAddr2 = await pionerV1.getBalance(addr2);
+
+    console.log("balances : ",BigInt(initialBalanceAddr1)/BigInt(1e18),BigInt(initialBalanceAddr2)/BigInt(1e18));
+    const domain = {
+      name: 'PionerV1Open',
+      version: '1.0',
+      chainId: 31337,
+      verifyingContract: pionerV1Open.target
+    };
+    OracleSwapWithSignature: [
+      { name: 'x', type: 'uint256' },
+      { name: 'parity', type: 'uint8' },
+      { name: 'maxConfidence', type: 'uint256' },
+      { name: 'asset1', type: 'bytes32' },
+      { name: 'asset2', type: 'bytes32' },
+      { name: 'maxDelay', type: 'uint256' },
+      { name: 'imA', type: 'uint256' },
+      { name: 'imB', type: 'uint256' },
+      { name: 'dfA', type: 'uint256' },
+      { name: 'dfB', type: 'uint256' },
+      { name: 'expiryA', type: 'uint256' },
+      { name: 'expiryB', type: 'uint256' },
+      { name: 'timeLockA', type: 'uint256' },
+      { name: 'signatureHashOpenQuote', type: 'bytes32' }, // Adjusted for EIP-712 compatibility
+      { name: 'nonce', type: 'uint256' }
+  ]
+  
+  const oracleSwapWithSignatureValue = {
+    x: 0, // Assuming a placeholder value
+    parity: 0, // Assuming a placeholder or default value
+    maxConfidence: 0, // Assuming a placeholder value
+    asset1: ethers.utils.formatBytes32String(""), // Placeholder asset identifier
+    asset2: ethers.utils.formatBytes32String(""), // Placeholder asset identifier
+    maxDelay: 0, // Assuming a placeholder value
+    imA: ethers.BigNumber.from("0"), // Default to 0
+    imB: ethers.BigNumber.from("0"), // Default to 0
+    dfA: ethers.BigNumber.from("0"), // Default to 0
+    dfB: ethers.BigNumber.from("0"), // Default to 0
+    expiryA: 0, // Assuming a placeholder value
+    expiryB: 0, // Assuming a placeholder value
+    timeLockA: 0, // Assuming a placeholder value
+    signatureHashOpenQuote: "0x", // Assuming an empty hash or signature
+    nonce: 0
+  };
+  
+    const bContractLength = await pionerV1.getBContractLength();
+    const _bContractId = bContractLength - BigInt(1);
+    const bOracleLength = await pionerV1.getBOracleLength();
+    const _bOracleId = bOracleLength - BigInt(1);
+    const value = {
+      isLong: true,
+      bOracleId: bOracleLength - BigInt(1),
+      price: ethers.parseUnits("46", 18),
+      qty: ethers.parseUnits("10", 18),
+      interestRate: ethers.parseUnits("1", 17),
+      isAPayingAPR: true,
+      frontEnd: owner.address,
+      affiliate: owner.address,
+      authorized: "0x0000000000000000000000000000000000000000",
+      nonce: 0
+    };
+
+
+    await network.provider.send("evm_increaseTime", [1 * 24 * 60 * 60]);
+    await network.provider.send("evm_mine");
+
+    const signOpenQuote = await addr1.signTypedData(domain, types, value);
+
+    await expect(pionerV1Open.connect(addr1).openQuoteSigned(
+      value,signOpenQuote
+    )).to.emit(pionerV1Open, "openQuoteSignedEvent");
+
+    const _acceptPrice = ethers.parseUnits("50", 18);
+    const _backendAffiliate = owner.address;
+
+    const newbContractLength = await pionerV1.getBContractLength();
+    const _newbContractId = newbContractLength - BigInt(1);
+    await pionerV1Open.connect(addr2).acceptQuote(_newbContractId, _acceptPrice, _backendAffiliate);
+
+    const finalBalanceAddr1 = await pionerV1.getBalance(addr1);
+    const finalBalanceAddr2 = await pionerV1.getBalance(addr2);
+    const owedAmount1 = await pionerV1.getOwedAmount(addr1,addr2);
+    const owedAmount2 = await pionerV1.getOwedAmount(addr2,addr1);
+    console.log("balances : ",BigInt(finalBalanceAddr1)/BigInt(1e18),BigInt(finalBalanceAddr2)/BigInt(1e18), BigInt(owedAmount1)/BigInt(1e18), BigInt(owedAmount2)/BigInt(1e18));
+  });
+
+ 
+
 });
 

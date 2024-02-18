@@ -118,7 +118,7 @@ describe("PionerV1Close Contract", function () {
     await pionerV1Open.connect(addr2).acceptQuote(_bOracleId, _acceptPrice, _backendAffiliate);
   });
 
-  it("Close Quote Limi Win", async function () {
+  it("Close Quote Limit Win", async function () {
     const e18 = BigInt(ethers.parseUnits("1", 18));
     const initialBalanceAddr1 = await pionerV1.getBalance(addr1);
     const initialBalanceAddr2 = await pionerV1.getBalance(addr2);
@@ -155,8 +155,6 @@ describe("PionerV1Close Contract", function () {
     const actualAmountTakenAddr1 = BigInt(initialBalanceAddr1) - BigInt(finalBalanceAddr1);
     const actualAmountTakenAddr2 = BigInt(initialBalanceAddr2) - BigInt(finalBalanceAddr2);
 
-    //expect(actualAmountTakenAddr1).to.equal(BigInt(0), "Amount taken from addr1 does not match expected value");
-    //expect(actualAmountTakenAddr2).to.equal(BigInt(0), "Amount taken from addr2 does not match expected value");
 });
 
 it("Close Quote Limit Loss", async function () {

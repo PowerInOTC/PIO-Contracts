@@ -146,5 +146,4 @@ contract PionerV1Default {
         pio.updateCumIm(bO, bC, bContractId);
     }
     
-    
 }

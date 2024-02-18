@@ -158,8 +158,8 @@ async function main() {
   console.log("const PionerV1DefaultAddress = ^", pionerV1Default.target, "^");
   console.log("const PionerV1StableAddress = ^", pionerV1Stable.target, "^");
   console.log("const PionerV1ViewAddress = ^", pionerV1View.target, "^"); 
-  console.log("const PionerV1ViewAddress = ^", pionerV1Oracle.target, "^"); 
-  console.log("const PionerV1ViewAddress = ^", pionerV1Warper.target, "^"); 
+  console.log("const PionerV1OracleAddress = ^", pionerV1Oracle.target, "^"); 
+  console.log("const PionerV1WarperAddress = ^", pionerV1Warper.target, "^"); 
 
   // Mint FakeUSD tokens to addr1, addr2, and addr3
   await fakeUSD.mint(ethers.parseUnits("10000", 18));
