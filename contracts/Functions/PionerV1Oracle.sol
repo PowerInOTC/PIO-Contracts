@@ -18,7 +18,7 @@ contract PionerV1Oracle {
     PionerV1 private pio;
     SchnorrSECP256K1VerifierV2 public verifier;
 
-    event deployBContract(uint256 indexed bOracleId);
+    event   
 
     constructor(address _pionerV1, address _verifierAddress) {
         pio = PionerV1(_pionerV1);

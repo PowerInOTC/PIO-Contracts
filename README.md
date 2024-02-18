@@ -1,14 +1,13 @@
-# Sample Hardhat Project
+# Hardhat Project
 Try running some of the following tasks:
 
 ```shell
 npx hardhat help
 npx hardhat test
-REPORT_GAS=true npx hardhat test
 npx hardhat node
 npx hardhat run scripts/deploy.ts --network base-sepolia
 ```
-# mumbai main-contracts
+# Base-Sepolia PionerV1 contracts
 ```
 const PionerV1UtilsAddress = "0x4cFDc54985B04C944f6Ec7192873473acB5d4F92";
 const FakeUSDAddress = "0xF1FBfB0a2Cc4c44253b39542B26716314A34F0B6";
