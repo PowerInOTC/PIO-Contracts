@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -406,4 +406,26 @@ contract PionerV1Storage is MuonClientBase{
         pionerDao = PIONER_DAO;
         admin = ADMIN;
     }
+
+        // Affiliation, Fee Sharing
+    mapping(address => mapping( bytes32 => uint256)) internal feeShare;
+    mapping(address => mapping( bytes32 => uint256)) internal newFeeShare;
+    mapping(address => mapping( bytes32 => uint256)) internal initNewFeeShareTime;
+
+    function setFeeShare(address target, bytes32 feeType, uint256 newShare) public {
+        if (feeShare[target][feeType] != newShare){
+            newFeeShare[target][feeType] = newShare;
+            initNewFeeShareTime[target][feeType] = block.timestamp;
+        } else if (initNewFeeShareTime[target][feeType] + 1 days < block.timestamp){
+            feeShare[target][feeType] = newFeeShare[target][feeType];
+            initNewFeeShareTime[target][feeType] = 0;
+        }
+    }
+
+    function setFeeShare(address[] memory targets, bytes32[] memory feeTypes, uint256[] memory newShares) public {
+        for (uint256 i = 0; i < targets.length; i++){
+            setFeeShare(targets[i], feeTypes[i], newShares[i]);
+        }
+    }
+
 }

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -105,13 +105,23 @@ contract PionerV1CA is PionerV1Storage {
         emit ClaimOwedEvent(target, receiver, owedAmount);
     }
     
-    function payAffiliates(uint256 amount, address frontend, address affiliate, address hedger) public{
-        balances[frontend] += amount * FRONTEND_SHARE;
-        balances[affiliate] += amount * AFFILIATION_SHARE;
-        balances[hedger] += amount * HEDGER_SHARE;
-        balances[PIONER_DAO] += amount * PIONER_DAO_SHARE;
+
+    function getFeeShare(address target, bytes32 feeType) public view returns(uint256) {
+        return feeShare[target][feeType];
     }
 
+    function payTradingFeeShare(uint256 amount, address frontend, address affiliate) public{
+        balances[frontend] += amount * FRONTEND_SHARE;
+        balances[affiliate] += amount * AFFILIATION_SHARE;
+    }
+
+    function payFundingShare(uint256 amount) public{
+        balances[PIONER_DAO] += amount;
+    }
+
+    function payLiquidationShare(uint256 amount) public{
+        balances[PIONER_DAO] += amount;
+    }
 
     // update cum Im for stable default management
     function updateCumIm(utils.bOracle memory bO, utils.bContract memory bC, uint256 bContractId) external onlyContracts { 

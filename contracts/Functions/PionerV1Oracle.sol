@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.8.20;
 // LICENSE.txt at : https://www.pioner.io/license
 
@@ -18,8 +18,8 @@ contract PionerV1Oracle {
     PionerV1 private pio;
     SchnorrSECP256K1VerifierV2 public verifier;
 
-    event   
-
+    event deployBContract(uint256 bContractId);
+    
     constructor(address _pionerV1, address _verifierAddress) {
         pio = PionerV1(_pionerV1);
         verifier = SchnorrSECP256K1VerifierV2(_verifierAddress);

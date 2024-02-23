@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.8.20;
 
 import "../PionerV1.sol";
@@ -102,7 +102,7 @@ contract PionerV1Default {
                 paid += bO.imA * notional;
                 if ( paid > uPnl){ pio.addBalance(bC.pA, paid - uPnl );} else { pio.addToOwed( uPnl - paid, bC.pA, bC.pB);}
                 pio.setBalance( paid + (bO.dfB + bO.imB + (bO.dfA * ( 1e18 - pio.getTotalShare())) / 1e18 ) * notional , bC.pB, address(0), true, false);
-                pio.payAffiliates(( bO.dfA * notional ) * pio.getTotalShare() , bC.frontEnd, bC.affiliate, bC.hedger);
+                pio.payLiquidationShare(( bO.dfA * notional ) * pio.getTotalShare() );
 
                 bC.initiator = bC.pA;
                 bC.state = 4;
@@ -112,7 +112,7 @@ contract PionerV1Default {
                 pio.decreaseOpenPositionNumber(bC.pA);
                 emit liquidatedEvent(bContractId);
             } else { // settle
-                pio.payAffiliates((ir) * pio.getTotalShare() / 1e18, bC.frontEnd, bC.affiliate, bC.hedger);
+                pio.payLiquidationShare(( bO.dfA * notional ) * pio.getTotalShare() );
                 pio.setBalance( uPnl + deltaImB , bC.pB, address(0), true, false);
                 pio.paySponsor(msg.sender, bC.pA, bC.price, bO.lastPrice, bO.imA, false);
                 bC.price = bO.lastPrice ;
@@ -125,7 +125,8 @@ contract PionerV1Default {
                 if( paid > uPnl ){ paid += bO.imB * notional + paid - uPnl; } else { paid += bO.imB * notional; }
                 if ( paid > uPnl){ pio.addBalance(bC.pB, paid - uPnl );} else { pio.addToOwed( uPnl - paid, bC.pB, bC.pA);}
                 pio.setBalance( paid + (bO.dfA + bO.imA + (bO.dfB * ( 1e18 - pio.getTotalShare())) / 1e18 ) * notional , bC.pA, address(0), true, false);
-                pio.payAffiliates(( bO.dfB * notional ) * pio.getTotalShare() , bC.frontEnd, bC.affiliate, bC.hedger);
+                pio.payLiquidationShare(( bO.dfA * notional ) * pio.getTotalShare() );
+
 
                 bC.initiator = bC.pB;
                 bC.state = 4;
@@ -135,7 +136,7 @@ contract PionerV1Default {
                 pio.decreaseOpenPositionNumber(bC.pB);
                 emit liquidatedEvent(bContractId);
             } else { // settle
-                pio.payAffiliates((ir) * pio.getTotalShare() / 1e18, bC.frontEnd, bC.affiliate, bC.hedger);
+                pio.payLiquidationShare(( bO.dfA * notional ) * pio.getTotalShare() );
                 pio.setBalance( uPnl - deltaImA , bC.pA, address(0), true, false);
                 pio.paySponsor(msg.sender, bC.pB, bC.price, bO.lastPrice, bO.imB, false);
                 bC.price = bO.lastPrice ;

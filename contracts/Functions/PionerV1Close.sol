@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.8.20;
 // LICENSE.txt at : https://www.pioner.io/license
 
@@ -285,7 +285,7 @@ contract PionerV1Close is EIP712 {
             paid = toPay;
         }  
           if(ir <= paid + collatRequirB ){
-            pio.payAffiliates( ir, bC.frontEnd, bC.frontEnd, bC.hedger);
+            pio.payFundingShare( ir);
             pio.setBalance( paid + collatRequirB - ir  , bC.pB, address(0), true, false);
           }
           
@@ -299,7 +299,7 @@ contract PionerV1Close is EIP712 {
             paid = toPay;
         }
           if(ir <= paid + collatRequirA  ){
-            pio.payAffiliates( ir , bC.frontEnd, bC.frontEnd, bC.hedger);
+            pio.payFundingShare( ir);
             pio.setBalance( paid + collatRequirA - ( ir  ) , bC.pA, address(0), true, false);
           } 
       }

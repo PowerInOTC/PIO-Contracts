@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.8.20;
 
 import "./Functions/PionerV1CA.sol";
@@ -29,7 +29,8 @@ contract PionerV1 is PionerV1CA{
         uint256 max_open_positions,
         uint256 grace_period, 
         address pioner_dao,
-        address admin) {
+        address admin
+        ) {
         BALANCETOKEN = IERC20(daiAddress);
         MIN_NOTIONAL = min_notional;
         FRONTEND_SHARE = frontend_share;

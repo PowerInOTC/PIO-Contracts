@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.8.20;
 
 import "../PionerV1.sol";
@@ -73,7 +73,7 @@ contract PionerV1Open  is EIP712  {
         require((pio.getCancelledOpenQuotes(signHash, signer)  + pio.getCancelTimeBuffer()) >= block.timestamp || pio.getCancelledOpenQuotes(signHash, signer)  == 0, "Quote expired");
         pio.setCancelledOpenQuotes(signHash, signer, 1) ;
         require(openQuoteSign.authorized == address(0) || signer == openQuoteSign.authorized, "Invalid signature or unauthorized");
-        console.log(1);
+
         utils.bContract memory bC = pio.getBContract(pio.getBContractLength());
         utils.bOracle memory bO = pio.getBOracle(openQuoteSign.bOracleId);
 
@@ -189,11 +189,13 @@ contract PionerV1Open  is EIP712  {
             else if (bC.initiator == bC.pB){
                 bC.price = acceptQuoteSign.acceptPrice;
                 bC.pA = signer;
+                uint256 notional = bC.amount / 1e18 * acceptQuoteSign.acceptPrice / 1e18;
                 require(acceptQuoteSign.acceptPrice >= bC.price, "Open28");
-                pio.setBalance( ( bO.imA + bO.dfA) * acceptQuoteSign.acceptPrice / 1e18 * bC.amount / 1e18  , bC.pA, address(0), false, false);
-                pio.addCumImBalances(signer, bO.imA * bC.amount / 1e18 * acceptQuoteSign.acceptPrice / 1e18 ); // @mint
+                pio.setBalance( ( bO.imA + bO.dfA) * notional , bC.pA, address(0), false, false);
+                pio.addCumImBalances(signer, bO.imA * notional); // @mint
                 pio.setBalance( ((bO.imB + bO.dfB) * (acceptQuoteSign.acceptPrice - bC.price) / 1e18 * bC.amount / 1e18) , bC.pB, address(0), true, true);
                 pio.removeCumImBalances(signer, bO.imA * bC.amount / 1e18 * (acceptQuoteSign.acceptPrice - bC.price) / 1e18 ); // @mint
+                pio.payTradingFeeShare( pio.getFeeShare(bC.affiliate, bO.asset1) * notional ,bC.affiliate, acceptQuoteSign.backendAffiliate);
             }
             bC.openTime = block.timestamp;
             bC.hedger = acceptQuoteSign.backendAffiliate;

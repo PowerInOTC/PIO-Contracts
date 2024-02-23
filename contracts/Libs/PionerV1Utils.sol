@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.8.20;
 
 import "hardhat/console.sol";
@@ -114,6 +114,7 @@ library PionerV1Utils {
         bool isPaused;
         uint256 deployTime;
         uint256 marketCloseFee;
+        uint256 feFee;
         /*
         // CCP
         address ccpDAO;
