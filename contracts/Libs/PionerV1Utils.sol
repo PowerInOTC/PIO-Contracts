@@ -115,8 +115,55 @@ library PionerV1Utils {
         uint256 deployTime;
         uint256 marketCloseFee;
         uint256 feFee;
-        /*
-        // CCP
+
+    }
+
+    /* 
+    struct bOracle{
+        uint256 OracleUpdateId;
+        uint256 CCPId;
+
+        uint256 lastBid;
+        uint256 lastAsk;
+
+        uint256 lastPrice;
+        uint256 lastPriceUpdateTime; 
+        uint256 imA;
+        uint256 imB;
+        uint256 dfA;
+        uint256 dfB;
+        uint256 expiryA;
+        uint256 expiryB;
+        uint256 timeLockA; 
+        uint256 timeLockB;
+        uint256 cType;
+        uint256 forceCloseType;
+        address kycAddress; 
+        bool isPaused;
+        uint256 deployTime;
+        uint256 marketCloseFee;
+        uint256 feFee;
+    }
+
+
+    struct bOracleUpdate {
+        uint256 oracleType;
+        // pyth
+        address priceFeedAddress;
+        bytes32 pythAddress1;
+        bytes32 pythAddress2;
+        // pion
+        bytes32 asset1;
+        bytes32 asset2;
+        address publicOracleAddress;
+        uint256 maxConfidence;
+        uint256 x;
+        uint8 parity;
+        uint256 maxDelay;
+    }
+    
+    struct CCP{
+
         address ccpDAO;
         uint256 longamount;
         uint256 shortamount;
@@ -126,8 +173,13 @@ library PionerV1Utils {
         uint256 maxShortOI;
         uint256 ir;
         uint256 volatilityThreshold; // not add to owed if pass that threshold
+        }
         */
-    }
+
+
+     
+
+
 
     struct  OpenQuoteSign {
         bool isLong;
