@@ -38,13 +38,13 @@ contract PionerV1Open  is EIP712  {
     ) public {  
         bytes32 structHash = keccak256(abi.encode(
             keccak256("CancelRequestSign(bytes orderHash,uint256 nonce)"),
-            keccak256(abi.encodePacked(cancelRequest.orderHash)), 
+            keccak256(abi.encodePacked(cancelRequest.targetHash)), 
             cancelRequest.nonce
         ));
         bytes32 hash = _hashTypedDataV4(structHash);
         address signer = ECDSA.recover(hash, signature);
-        pio.setCancelledOpenQuotes(cancelRequest.orderHash, signer, block.timestamp);
-        emit cancelSignedMessageOpenEvent(signer, cancelRequest.orderHash);
+        pio.setCancelledOpenQuotes(cancelRequest.targetHash, signer, block.timestamp);
+        emit cancelSignedMessageOpenEvent(signer, cancelRequest.targetHash);
     }
 
 
@@ -156,21 +156,21 @@ contract PionerV1Open  is EIP712  {
         pio.updateCumIm(bO, bC, pio.getBContractLength() - 1);
     }
 
-    function acceptQuoteSigned(utils.AcceptQuoteSign calldata acceptQuoteSign, bytes calldata signHash) public {
+    function acceptQuoteSigned(utils.AcceptOpenQuoteSign calldata AcceptOpenQuoteSign, bytes calldata signHash) public {
         bytes32 structHash = keccak256(abi.encode(
             keccak256("AcceptQuote(uint256 bContractId,uint256 acceptPrice,address backendAffiliate,uint256 amount,uint256 nonce)"),
-            acceptQuoteSign.bContractId,
-            acceptQuoteSign.acceptPrice,
-            acceptQuoteSign.backendAffiliate,
-            acceptQuoteSign.amount,
-            acceptQuoteSign.nonce
+            AcceptOpenQuoteSign.bContractId,
+            AcceptOpenQuoteSign.acceptPrice,
+            AcceptOpenQuoteSign.backendAffiliate,
+            AcceptOpenQuoteSign.amount,
+            AcceptOpenQuoteSign.nonce
         ));
          bytes32 hash = _hashTypedDataV4(structHash);
         address signer = ECDSA.recover(hash, signHash);
         require((pio.getCancelledOpenQuotes(signHash, signer)  + pio.getCancelTimeBuffer()) <= block.timestamp || pio.getCancelledOpenQuotes(signHash, signer)  == 0, "Quote expired");
         pio.setCancelledOpenQuotes(signHash, signer, block.timestamp - pio.getCancelTimeBuffer() -1);
 
-        utils.bContract memory bC = pio.getBContract(acceptQuoteSign.bContractId);
+        utils.bContract memory bC = pio.getBContract(AcceptOpenQuoteSign.bContractId);
         utils.bOracle memory bO = pio.getBOracle(bC.oracleId);
 
         require( pio.getOpenPositionNumber(signer) < pio.getMaxOpenPositions(), "Open21" );
@@ -178,33 +178,33 @@ contract PionerV1Open  is EIP712  {
 
         if (bC.state == 1){
             if (bC.initiator == bC.pA){
-                bC.price = acceptQuoteSign.acceptPrice;
+                bC.price = AcceptOpenQuoteSign.acceptPrice;
                 bC.pB = signer;
-                require(acceptQuoteSign.acceptPrice <= bC.price, "Open26");
-                pio.setBalance( ( bO.imB + bO.dfB) * acceptQuoteSign.acceptPrice / 1e18 * bC.amount / 1e18 , bC.pB, address(0), false, true);
-                pio.addCumImBalances(signer, bO.imB * bC.amount / 1e18 * acceptQuoteSign.acceptPrice / 1e18 ); // @mint
-                pio.setBalance( (bO.imA + bO.dfA) * (acceptQuoteSign.acceptPrice - bC.price) / 1e18 * bC.amount / 1e18  , bC.pA, address(0), true, false);
-                pio.removeCumImBalances(signer, bO.imA * bC.amount / 1e18 * (acceptQuoteSign.acceptPrice - bC.price) / 1e18 ); // @mint
+                require(AcceptOpenQuoteSign.acceptPrice <= bC.price, "Open26");
+                pio.setBalance( ( bO.imB + bO.dfB) * AcceptOpenQuoteSign.acceptPrice / 1e18 * bC.amount / 1e18 , bC.pB, address(0), false, true);
+                pio.addCumImBalances(signer, bO.imB * bC.amount / 1e18 * AcceptOpenQuoteSign.acceptPrice / 1e18 ); // @mint
+                pio.setBalance( (bO.imA + bO.dfA) * (AcceptOpenQuoteSign.acceptPrice - bC.price) / 1e18 * bC.amount / 1e18  , bC.pA, address(0), true, false);
+                pio.removeCumImBalances(signer, bO.imA * bC.amount / 1e18 * (AcceptOpenQuoteSign.acceptPrice - bC.price) / 1e18 ); // @mint
             }
             else if (bC.initiator == bC.pB){
-                bC.price = acceptQuoteSign.acceptPrice;
+                bC.price = AcceptOpenQuoteSign.acceptPrice;
                 bC.pA = signer;
-                uint256 notional = bC.amount / 1e18 * acceptQuoteSign.acceptPrice / 1e18;
-                require(acceptQuoteSign.acceptPrice >= bC.price, "Open28");
+                uint256 notional = bC.amount / 1e18 * AcceptOpenQuoteSign.acceptPrice / 1e18;
+                require(AcceptOpenQuoteSign.acceptPrice >= bC.price, "Open28");
                 pio.setBalance( ( bO.imA + bO.dfA) * notional , bC.pA, address(0), false, false);
                 pio.addCumImBalances(signer, bO.imA * notional); // @mint
-                pio.setBalance( ((bO.imB + bO.dfB) * (acceptQuoteSign.acceptPrice - bC.price) / 1e18 * bC.amount / 1e18) , bC.pB, address(0), true, true);
-                pio.removeCumImBalances(signer, bO.imA * bC.amount / 1e18 * (acceptQuoteSign.acceptPrice - bC.price) / 1e18 ); // @mint
-                pio.payTradingFeeShare( pio.getFeeShare(bC.affiliate, bO.asset1) * notional ,bC.affiliate, acceptQuoteSign.backendAffiliate);
+                pio.setBalance( ((bO.imB + bO.dfB) * (AcceptOpenQuoteSign.acceptPrice - bC.price) / 1e18 * bC.amount / 1e18) , bC.pB, address(0), true, true);
+                pio.removeCumImBalances(signer, bO.imA * bC.amount / 1e18 * (AcceptOpenQuoteSign.acceptPrice - bC.price) / 1e18 ); // @mint
+                pio.payTradingFeeShare( pio.getFeeShare(bC.affiliate) * notional ,bC.affiliate, AcceptOpenQuoteSign.backendAffiliate);
             }
             bC.openTime = block.timestamp;
-            bC.hedger = acceptQuoteSign.backendAffiliate;
+            bC.hedger = AcceptOpenQuoteSign.backendAffiliate;
             bC.state = 2;
             pio.addOpenPositionNumber(signer);
-            pio.setBContract(acceptQuoteSign.bContractId, bC);
+            pio.setBContract(AcceptOpenQuoteSign.bContractId, bC);
 
-            pio.updateCumIm(bO, bC, acceptQuoteSign.bContractId);
-            emit acceptQuoteEvent(acceptQuoteSign.bContractId);
+            pio.updateCumIm(bO, bC, AcceptOpenQuoteSign.bContractId);
+            emit acceptQuoteEvent(AcceptOpenQuoteSign.bContractId);
         }
     }
 

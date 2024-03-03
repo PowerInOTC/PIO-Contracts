@@ -42,17 +42,17 @@ contract PionerV1Warper is EIP712 {
         oracle = PionerV1Oracle(pionerV1OracleAddress);
     }
 
-    function wrapperUpdatePriceAndDefault( utils.upnlSig memory priceSignature,uint256 bOracleId,uint256 bContractId ) public {
+    function warpperUpdatePriceAndDefault( utils.upnlSig memory priceSignature,uint256 bOracleId,uint256 bContractId ) public {
         oracle.updatePricePion(priceSignature, bOracleId );
         settle.settleAndLiquidate( bContractId);
     }
 
-    function wrapperUpdatePriceAndCloseMarket( utils.upnlSig memory priceSignature,uint256 bOracleId,uint256 bCloseQuoteId,uint256 index ) public {
+    function warpperUpdatePriceAndCloseMarket( utils.upnlSig memory priceSignature,uint256 bOracleId,uint256 bCloseQuoteId,uint256 index ) public {
         oracle.updatePricePion( priceSignature, bOracleId );
         close.closeMarket(bCloseQuoteId, index);
     }
 
-    function warperCloseQuoteSignedAndAcceptClose( utils.OpenCloseQuote calldata quote, bytes calldata signHash ) public {
+    function warperPushCloseQuoteSignedAndAcceptClose( utils.OpenCloseQuoteSign calldata quote, bytes calldata signHash ) public {
         close.openCloseQuoteSigned( quote, signHash ); 
         close.acceptCloseQuote(pio.getBCloseQuoteLength() - 1, 0 , quote.amount );
     }
@@ -118,58 +118,59 @@ contract PionerV1Warper is EIP712 {
     }
 
     function wrapperOpenQuoteAndDeployPionOracleSigned(
-        utils.OracleSwapWithSignature calldata oracleSwapWithSignature,
-        bytes calldata signatureOracleSwapWithSignature,
+        utils.bOracleSign calldata bOracleSign,
+        bytes calldata signaturebOracleSign,
         utils.OpenQuoteSign calldata openQuoteSign,
         bytes calldata openQuoteSignature
     ) public {
-        require( keccak256(openQuoteSignature) == keccak256(oracleSwapWithSignature.signatureHashOpenQuote), "Signature hash mismatch" );
+        require( keccak256(openQuoteSignature) == keccak256(bOracleSign.signatureHashOpenQuote), "Signature hash mismatch" );
         bytes32 structHash = keccak256(abi.encode(
-            keccak256("OracleSwapWithSignature(uint256 x,uint8 parity,uint256 maxConfidence,uint256 maxDelay,uint256 imA,uint256 imB,uint256 dfA,uint256 dfB,uint256 expiryA,uint256 expiryB,uint256 timeLockA,bytes32 signatureHashOpenQuote,uint256 nonce)"),
-            oracleSwapWithSignature.x,
-            oracleSwapWithSignature.parity,
-            oracleSwapWithSignature.maxConfidence,
-            oracleSwapWithSignature.maxDelay,
-            oracleSwapWithSignature.imA,
-            oracleSwapWithSignature.imB,
-            oracleSwapWithSignature.dfA,
-            oracleSwapWithSignature.dfB,
-            oracleSwapWithSignature.expiryA,
-            oracleSwapWithSignature.expiryB,
-            oracleSwapWithSignature.timeLockA,
-            oracleSwapWithSignature.signatureHashOpenQuote,
-            oracleSwapWithSignature.nonce
+            keccak256("bOracleSign(uint256 x,uint8 parity,uint256 maxConfidence,uint256 maxDelay,uint256 imA,uint256 imB,uint256 dfA,uint256 dfB,uint256 expiryA,uint256 expiryB,uint256 timeLockA,bytes32 signatureHashOpenQuote,uint256 nonce)"),
+            bOracleSign.x,
+            bOracleSign.parity,
+            bOracleSign.maxConfidence,
+            bOracleSign.maxDelay,
+            bOracleSign.imA,
+            bOracleSign.imB,
+            bOracleSign.dfA,
+            bOracleSign.dfB,
+            bOracleSign.expiryA,
+            bOracleSign.expiryB,
+            bOracleSign.timeLockA,
+            bOracleSign.signatureHashOpenQuote,
+            bOracleSign.nonce
         ));
         bytes32 hash = _hashTypedDataV4(structHash);
-        address signer = ECDSA.recover(hash, signatureOracleSwapWithSignature);
+        address signer = ECDSA.recover(hash, signaturebOracleSign);
 
         oracle.deployBOraclePion(
-            oracleSwapWithSignature.x, oracleSwapWithSignature.parity, oracleSwapWithSignature.maxConfidence, oracleSwapWithSignature.asset1, oracleSwapWithSignature.asset2, oracleSwapWithSignature.maxDelay, 
-            oracleSwapWithSignature.imA, oracleSwapWithSignature.imB, oracleSwapWithSignature.dfA, oracleSwapWithSignature.dfB, 
-            oracleSwapWithSignature.expiryA, oracleSwapWithSignature.expiryB, oracleSwapWithSignature.timeLockA, oracleSwapWithSignature.timeLockA, 1 
+            bOracleSign.x, bOracleSign.parity, bOracleSign.maxConfidence, bOracleSign.asset1, bOracleSign.asset2, bOracleSign.maxDelay, 
+            bOracleSign.imA, bOracleSign.imB, bOracleSign.dfA, bOracleSign.dfB, 
+            bOracleSign.expiryA, bOracleSign.expiryB, bOracleSign.timeLockA, bOracleSign.timeLockA, 1 
         );
 
         open.openQuoteSigned(openQuoteSign, openQuoteSignature, signer);
     }
 
-
+    /// @dev This function is used by hedging bots to open a quote and deploy a Pion Oracle
     function warperOpenQuoteDeployOracleAndAcceptQuoteMM( 
-        utils.OracleSwapWithSignature calldata oracleSwapWithSignature,
-        bytes calldata signatureOracleSwapWithSignature,
+        utils.bOracleSign calldata bOracleSign,
+        bytes calldata signaturebOracleSign,
         utils.OpenQuoteSign calldata openQuoteSign,
         bytes calldata openQuoteSignature,
         uint256 bContractId, uint256 _acceptPrice, address backendAffiliate) public {
-        wrapperOpenQuoteAndDeployPionOracleSigned( oracleSwapWithSignature, signatureOracleSwapWithSignature, openQuoteSign, openQuoteSignature); 
+        wrapperOpenQuoteAndDeployPionOracleSigned( bOracleSign, signaturebOracleSign, openQuoteSign, openQuoteSignature); 
         open.acceptQuote(bContractId, _acceptPrice, backendAffiliate);
     }
     
+    /// @dev This functino is used to push a signed accept quote in case accepting counterparty does not do it
     function warperOpenQuoteDeployOracleAndAcceptQuoteAPI( 
-        utils.OracleSwapWithSignature calldata oracleSwapWithSignature,
-        bytes calldata signatureOracleSwapWithSignature,
+        utils.bOracleSign calldata bOracleSign,
+        bytes calldata signaturebOracleSign,
         utils.OpenQuoteSign calldata openQuoteSign,
         bytes calldata openQuoteSignature,
-        utils.AcceptQuoteSign calldata acceptQuoteSign, bytes calldata signHash) public {
-        wrapperOpenQuoteAndDeployPionOracleSigned( oracleSwapWithSignature, signatureOracleSwapWithSignature, openQuoteSign, openQuoteSignature); 
+        utils.AcceptOpenQuoteSign calldata acceptQuoteSign, bytes calldata signHash) public {
+        wrapperOpenQuoteAndDeployPionOracleSigned( bOracleSign, signaturebOracleSign, openQuoteSign, openQuoteSignature); 
         open.acceptQuoteSigned(acceptQuoteSign, signHash);
     }
 

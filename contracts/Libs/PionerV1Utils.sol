@@ -177,10 +177,6 @@ library PionerV1Utils {
         */
 
 
-     
-
-
-
     struct  OpenQuoteSign {
         bool isLong;
         uint256 bOracleId;
@@ -194,7 +190,7 @@ library PionerV1Utils {
         uint256 nonce; 
     }
 
-    struct AcceptQuoteSign {
+    struct AcceptOpenQuoteSign {
         uint256 bContractId;
         uint256 acceptPrice;
         address backendAffiliate;
@@ -203,11 +199,11 @@ library PionerV1Utils {
     }
 
     struct CancelRequestSign {
-        bytes orderHash; 
+        bytes targetHash; 
         uint256 nonce;
     }
 
-    struct OpenCloseQuote {
+    struct OpenCloseQuoteSign {
         uint256 bContractId;
         uint256 price;
         uint256 amount;
@@ -217,18 +213,13 @@ library PionerV1Utils {
         uint256 nonce;
     }
 
-    struct CloseQuoteSignature {
+    struct CloseQuoteSign {
         uint256 bCloseQuoteId;
         uint256 index;
         uint256 nonce;
     }
 
-    struct CancelCloseRequest {
-        bytes targetHash;
-        uint256 nonce;
-    }
-
-    struct OracleSwapWithSignature {
+    struct bOracleSign {
         uint256 x;
         uint8 parity;
         uint256 maxConfidence;
@@ -245,7 +236,7 @@ library PionerV1Utils {
         bytes signatureHashOpenQuote;
         uint256 nonce;
     }
-
+/*
     struct bContractIr {
         uint256 flatRateA;
         uint256 flatRateB;
@@ -261,7 +252,7 @@ library PionerV1Utils {
         bytes32 irB;
         uint256 benchMarkMethod;
     }
-
+*/
     function int64ToUint256(int64 value) public pure returns (uint256) {
         require(value >= 0, "Cannot cast negative int64 to uint256");
 

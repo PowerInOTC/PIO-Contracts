@@ -106,10 +106,6 @@ contract PionerV1CA is PionerV1Storage {
     }
     
 
-    function getFeeShare(address target, bytes32 feeType) public view returns(uint256) {
-        return feeShare[target][feeType];
-    }
-
     function payTradingFeeShare(uint256 amount, address frontend, address affiliate) public{
         balances[frontend] += amount * FRONTEND_SHARE;
         balances[affiliate] += amount * AFFILIATION_SHARE;

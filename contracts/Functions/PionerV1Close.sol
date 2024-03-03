@@ -33,7 +33,7 @@ contract PionerV1Close is EIP712 {
     }
 
     function cancelSignedMessageClose(
-        utils.CancelCloseRequest calldata cancelRequest,
+        utils.CancelRequestSign calldata cancelRequest,
         bytes calldata signature
     ) public {
         bytes32 structHash = keccak256(abi.encode(
@@ -50,7 +50,7 @@ contract PionerV1Close is EIP712 {
 
 
     function openCloseQuoteSigned(
-        utils.OpenCloseQuote calldata quote,
+        utils.OpenCloseQuoteSign calldata quote,
         bytes calldata signHash
     ) public {
         bytes32 structHash = keccak256(abi.encode(
@@ -176,7 +176,7 @@ contract PionerV1Close is EIP712 {
 
     
 
-    function closeMarketSign(utils.CloseQuoteSignature calldata closeQuote, bytes calldata signature) public {
+    function closeMarketSign(utils.CloseQuoteSign calldata closeQuote, bytes calldata signature) public {
         bytes32 structHash = keccak256(abi.encode(
             closeQuote.bCloseQuoteId,
             closeQuote.index,
