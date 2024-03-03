@@ -66,8 +66,7 @@ contract PionerV1Warper is EIP712 {
         bool isAPayingAPR, 
         address frontEnd, 
         address affiliate,
-        bytes32 _asset1,
-        bytes32 _asset2,
+        bytes32 _assetHex,
         uint256 _x,
         uint8 _parity,
         uint256 _maxConfidence,
@@ -79,7 +78,7 @@ contract PionerV1Warper is EIP712 {
         uint256 _dfB,
         uint256 _expiryA,
         uint256 _expiryB,
-        uint256 _timeLockA,
+        uint256 _timeLock,
         uint256[] memory bContractIdsTP,
         uint256[] memory priceTP, 
         uint256[] memory amountTP, 
@@ -96,8 +95,7 @@ contract PionerV1Warper is EIP712 {
             _x,
             _parity,
             _maxConfidence,
-            _asset1,
-            _asset2,
+            _assetHex,
             _maxDelay,
             precision,
             _imA,
@@ -106,8 +104,7 @@ contract PionerV1Warper is EIP712 {
             _dfB,
             _expiryA,
             _expiryB,
-            _timeLockA,
-            _timeLockA,
+            _timeLock,
             1
             );
         open.openQuote(isLong, pio.getBOracleLength() - 1, price, amount, interestRate, isAPayingAPR, frontEnd, affiliate);
@@ -118,6 +115,7 @@ contract PionerV1Warper is EIP712 {
             close.openCloseQuote(bContractIdsSL, priceSL, amountSL, limitOrStopSL, expirySL);
         }
     }
+    
 
     function wrapperOpenQuoteAndDeployPionOracleSigned(
         utils.bOracleSign calldata bOracleSign,
@@ -127,7 +125,7 @@ contract PionerV1Warper is EIP712 {
     ) public {
         require( keccak256(openQuoteSignature) == keccak256(bOracleSign.signatureHashOpenQuote), "Signature hash mismatch" );
         bytes32 structHash = keccak256(abi.encode(
-            keccak256("bOracleSign(uint256 x,uint8 parity,uint256 maxConfidence,uint256 maxDelay,uint256 imA,uint256 imB,uint256 dfA,uint256 dfB,uint256 expiryA,uint256 expiryB,uint256 timeLockA,bytes32 signatureHashOpenQuote,uint256 nonce)"),
+            keccak256("bOracleSign(uint256 x,uint8 parity,uint256 maxConfidence,uint256 maxDelay,uint256 confidence, uint256 imA,uint256 imB,uint256 dfA,uint256 dfB,uint256 expiryA,uint256 expiryB,uint256 timeLock,bytes32 signatureHashOpenQuote,uint256 nonce)"),
             bOracleSign.x,
             bOracleSign.parity,
             bOracleSign.maxConfidence,
@@ -139,7 +137,7 @@ contract PionerV1Warper is EIP712 {
             bOracleSign.dfB,
             bOracleSign.expiryA,
             bOracleSign.expiryB,
-            bOracleSign.timeLockA,
+            bOracleSign.timeLock,
             bOracleSign.signatureHashOpenQuote,
             bOracleSign.nonce
         ));
@@ -147,9 +145,9 @@ contract PionerV1Warper is EIP712 {
         address signer = ECDSA.recover(hash, signaturebOracleSign);
 
         oracle.deployBOraclePion(
-            bOracleSign.x, bOracleSign.parity, bOracleSign.maxConfidence, bOracleSign.asset1, bOracleSign.asset2, bOracleSign.maxDelay, bOracleSign.precision, 
+            bOracleSign.x, bOracleSign.parity, bOracleSign.maxConfidence, bOracleSign.assetHex, bOracleSign.maxDelay, bOracleSign.precision, 
             bOracleSign.imA, bOracleSign.imB, bOracleSign.dfA, bOracleSign.dfB, 
-            bOracleSign.expiryA, bOracleSign.expiryB, bOracleSign.timeLockA, bOracleSign.timeLockA, 1 
+            bOracleSign.expiryA, bOracleSign.expiryB, bOracleSign.timeLock, 1 
         );
 
         open.openQuoteSigned(openQuoteSign, openQuoteSignature, signer);

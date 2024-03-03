@@ -238,12 +238,12 @@ contract PionerV1Close is EIP712 {
       (uint256 uPnl, bool isNegative) = utils.calculateuPnl( bC.price, bidAsk, bC.amount, bC.interestRate, bC.openTime , bC.isAPayingAPR );
 
       if (msg.sender == bC.pA){
-          require( bC.openTime + bO.timeLockA <= block.timestamp, "Close42");
+          require( bC.openTime + bO.timeLock <= block.timestamp, "Close42");
           closePosition(bC, bO, bContractId, uPnl, isNegative, bC.amount, bidAsk);
       }
       else{
           require(msg.sender == bC.pB, "Close43");
-          require( bC.openTime + bO.timeLockB <= block.timestamp, "Close44");
+          require( bC.openTime + bO.timeLock <= block.timestamp, "Close44");
           closePosition(bC, bO, bContractId, uPnl, isNegative, bC.amount, bidAsk);
       }
       pio.updateCumIm(bO, bC, bContractId);
@@ -258,11 +258,11 @@ contract PionerV1Close is EIP712 {
       require( 7 days < block.timestamp - bO.lastPriceUpdateTime, "Close40" );
       require ( bC.state == 2, "Close41");
       (uint256 uPnl, bool isNegative) = utils.calculateuPnl( bC.price, bO.lastPrice, bC.amount, bC.interestRate, bC.openTime , bC.isAPayingAPR );
+      require( bC.openTime + bO.timeLock > block.timestamp, "Close44");
       if (msg.sender == bC.pA){
           closePosition(bC, bO, bContractId, uPnl, isNegative, bC.amount, bO.lastPrice);
       }
       else{
-          require( bC.openTime + bO.timeLockB > block.timestamp, "Close44");
           closePosition(bC, bO, bContractId, uPnl, isNegative, bC.amount, bO.lastPrice);
       }
       pio.updateCumIm(bO, bC, bContractId);

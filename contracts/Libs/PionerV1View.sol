@@ -14,8 +14,7 @@ contract PionerV1View {
     }
 
     function getOracle(uint256 oracleId) public view returns (
-        bytes32 asset1,
-        bytes32 asset2,
+        bytes32 assetHex,
         uint256 oracleType,
         uint256 lastBid,
         uint256 lastAsk,
@@ -32,8 +31,7 @@ contract PionerV1View {
         uint256 dfB,
         uint256 expiryA,
         uint256 expiryB,
-        uint256 timeLockA,
-        uint256 timeLockB,
+        uint256 timeLock,
         uint256 cType,
         uint256 forceCloseType,
         address kycAddress,
@@ -42,8 +40,7 @@ contract PionerV1View {
     ) {
         utils.bOracle memory oracle = pio.getBOracle(oracleId);
         return (
-            oracle.asset1,
-            oracle.asset2,
+            oracle.assetHex,
             oracle.oracleType,
             oracle.lastBid,
             oracle.lastAsk,
@@ -60,8 +57,7 @@ contract PionerV1View {
             oracle.dfB,
             oracle.expiryA,
             oracle.expiryB,
-            oracle.timeLockA,
-            oracle.timeLockB,
+            oracle.timeLock,
             oracle.cType,
             oracle.forceCloseType,
             oracle.kycAddress,

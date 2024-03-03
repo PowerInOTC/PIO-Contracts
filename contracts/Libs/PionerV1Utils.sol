@@ -19,8 +19,7 @@ library PionerV1Utils {
     struct pionSign {
         int256 appId;
         bytes reqId;
-        bytes32 requestAsset1;
-        bytes32 requestAsset2;
+        bytes32 requestassetHex;
         uint256 requestPairBid;
         uint256 requestPairAsk;
         uint256 requestConfidence;
@@ -83,8 +82,7 @@ library PionerV1Utils {
 
     //Struct for Oracle
     struct bOracle{
-        bytes32 asset1;
-        bytes32 asset2;
+        bytes32 assetHex;
         uint256 oracleType;
         // Pyth
         address priceFeedAddress;
@@ -108,16 +106,13 @@ library PionerV1Utils {
         uint256 dfB;
         uint256 expiryA;
         uint256 expiryB;
-        uint256 timeLockA; 
-        uint256 timeLockB;
+        uint256 timeLock; 
         uint256 cType;
         uint256 forceCloseType;
         address kycAddress; 
         bool isPaused;
         uint256 deployTime;
         uint256 marketCloseFee;
-        uint256 feFee;
-
     }
 
     /* 
@@ -136,15 +131,17 @@ library PionerV1Utils {
         uint256 dfB;
         uint256 expiryA;
         uint256 expiryB;
-        uint256 timeLockA; 
-        uint256 timeLockB;
+        uint256 timeLock; 
         uint256 cType;
         uint256 forceCloseType;
         address kycAddress; 
         bool isPaused;
         uint256 deployTime;
         uint256 marketCloseFee;
-        uint256 feFee;
+    }
+
+    struct bOracleRules{
+
     }
 
 
@@ -155,7 +152,7 @@ library PionerV1Utils {
         bytes32 pythAddress1;
         bytes32 pythAddress2;
         // pion
-        bytes32 asset1;
+        bytes32 assetHex;
         bytes32 asset2;
         address publicOracleAddress;
         uint256 maxConfidence;
@@ -225,8 +222,7 @@ library PionerV1Utils {
         uint256 x;
         uint8 parity;
         uint256 maxConfidence;
-        bytes32 asset1;
-        bytes32 asset2;
+        bytes32 assetHex;
         uint256 maxDelay;
         uint256 precision;
         uint256 imA;
@@ -235,7 +231,7 @@ library PionerV1Utils {
         uint256 dfB;
         uint256 expiryA;
         uint256 expiryB;
-        uint256 timeLockA;
+        uint256 timeLock;
         bytes signatureHashOpenQuote;
         uint256 nonce;
     }

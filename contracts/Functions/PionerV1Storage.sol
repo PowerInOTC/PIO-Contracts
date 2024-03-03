@@ -60,6 +60,10 @@ contract PionerV1Storage is MuonClientBase{
         _;
     }
 
+    function getPIONERV1OPENADDRESS() external view returns (address) {
+        return PIONERV1OPEN;
+    }
+
     mapping( address => uint256) internal balances; 
     uint256 internal bOracleLength;
     mapping( uint256 => utils.bOracle) internal bOracles;

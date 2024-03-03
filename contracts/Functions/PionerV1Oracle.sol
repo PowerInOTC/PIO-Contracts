@@ -38,8 +38,7 @@ contract PionerV1Oracle {
         uint256 _dfB,
         uint256 _expiryA,
         uint256 _expiryB,
-        uint256 _timeLockA,
-        uint256 _timeLockB,
+        uint256 _timeLock,
         uint256 _cType 
     ) public {
         utils.bOracle memory bO = pio.getBOracle(pio.getBOracleLength());
@@ -54,8 +53,7 @@ contract PionerV1Oracle {
         bO.dfB = _dfB;
         bO.expiryA = _expiryA;
         bO.expiryB = _expiryB;
-        bO.timeLockA = _timeLockA;
-        bO.timeLockB = _timeLockB;
+        bO.timeLock = _timeLock;
         bO.cType = _cType;
         emit deployBContract(pio.getBOracleLength());
         pio.setBOracle(pio.getBOracleLength(), bO);
@@ -68,8 +66,7 @@ contract PionerV1Oracle {
         uint256 x,
         uint8 parity,
         uint256 _maxConfidence,
-        bytes32 _asset1,
-        bytes32 _asset2,
+        bytes32 _assetHex,
         uint256 _maxDelay,
         uint256 _precision,
         uint256 _imA,
@@ -78,16 +75,14 @@ contract PionerV1Oracle {
         uint256 _dfB,
         uint256 _expiryA,
         uint256 _expiryB,
-        uint256 _timeLockA,
-        uint256 _timeLockB,
+        uint256 _timeLock,
         uint256 _cType 
     ) public {
         utils.bOracle memory bO = pio.getBOracle(pio.getBOracleLength());
         bO.x = x;
         bO.parity = parity;
         bO.maxDelay = _maxDelay;
-        bO.asset1 = _asset1;
-        bO.asset2 = _asset2;
+        bO.assetHex = _assetHex;
         bO.oracleType = 4;
         bO.maxConfidence = _maxConfidence;
         bO.precision = _precision;
@@ -97,8 +92,7 @@ contract PionerV1Oracle {
         bO.dfB = _dfB;
         bO.expiryA = _expiryA;
         bO.expiryB = _expiryB;
-        bO.timeLockA = _timeLockA;
-        bO.timeLockB = _timeLockB;
+        bO.timeLock = _timeLock;
         bO.cType = _cType;
         bO.forceCloseType = 1;
         
@@ -116,8 +110,7 @@ contract PionerV1Oracle {
             abi.encodePacked(
                 priceSignature.appId,
                 priceSignature.reqId,
-                priceSignature.requestAsset1,
-                priceSignature.requestAsset2,
+                priceSignature.requestassetHex,
                 priceSignature.requestPairBid,
                 priceSignature.requestPairAsk,
                 priceSignature.requestConfidence,
@@ -138,8 +131,7 @@ contract PionerV1Oracle {
         require( 
             bO.lastPriceUpdateTime < priceSignature.requestSignTime
             && bO.oracleType == 4
-            && bO.asset1 == priceSignature.requestAsset1 
-            && bO.asset2 == priceSignature.requestAsset2 
+            && bO.assetHex == priceSignature.requestassetHex 
             && priceSignature.requestSignTime + bO.maxDelay>= block.timestamp 
             && priceSignature.requestConfidence <= bO.maxConfidence
             //&& priceSignature.requestPrecision == bO.precision
