@@ -153,7 +153,7 @@ contract PionerV1Storage is MuonClientBase{
     }
 
     // Getters for address internal variables
-    function getPioneerDao() external view returns (address) {
+    function getPionerDao() external view returns (address) {
         return PIONER_DAO;
     }
 

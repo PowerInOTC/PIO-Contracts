@@ -229,4 +229,73 @@ contract PionerV1Compliance {
         return kycPaused[user];
     }
 
+        /*
+    /// @dev Semi-Permisionless Migration System
+        1/ adming init migration
+        2/ bContract can be replicated on new contract and close on old contracts after 15 days
+        3/ balance transfered to new contract after 15 days
+        case 1 : user accept migration
+            - Migration is automatic
+        case 2 : user refuse migration
+            - User have 1 month to refuse migration
+            - Counterparty of a user who refuse migration, should settle before migration
+    */
+
+    bool isMigration;
+    address migrationContract;
+    uint256 migrationTime;
+    mapping(address => bool) public refuseMigrations;
+    mapping(address => bool) public balanceMigrated;
+    mapping(address => uint256) public collateralNotToMigrate;
+
+    event MigrationInitiated(address migrationContract, uint256 migrationTime);
+    event MigrationRefused(address user);
+    event bContractMigrated(uint256 bContractId);
+
+    function initMigration(address _migrationContract) public {
+        require(msg.sender == pio.getPionerDao(), "Only Pioner DAO can init migration");
+        isMigration = true;
+        migrationContract = _migrationContract;
+        migrationTime = block.timestamp + 15 days;
+    }
+
+    function refuseMigration() public {
+        require(isMigration, "Migration is not active");
+        refuseMigrations[msg.sender] = true;
+    }
+
+    function migrateBalance(address target) internal {
+        require(isMigration, "Migration is not active");
+        require(!refuseMigrations[target], "User refuse migration");
+        require(!balanceMigrated[target], "Balance already migrated");
+        require(pio.getBalance(target) > 0, "No balance to migrate");
+        uint256 balanceToMigrate = 0;
+        if(pio.getBalance(target) > collateralNotToMigrate[target]){
+            balanceToMigrate = pio.getBalance(target) - collateralNotToMigrate[target];
+            pio.setBalance( balanceToMigrate, target, address(0), false, true);
+        }
+        IERC20 BALANCETOKEN = pio.getBALANCETOKEN();
+        BALANCETOKEN.safeTransfer(migrationContract, balanceToMigrate);
+        balanceMigrated[target] = true;
+    }
+
+    function migratebContract(uint256[] memory bContractId) public {
+        require(isMigration, "Migration is not active");
+        for (  uint256 i = 0; i < bContractId.length; i++ ) {
+            utils.bContract memory bC = pio.getBContract(bContractId[i]);
+            if ( balanceMigrated[bC.pA] == false ) {
+                migrateBalance(bC.pA);
+            }
+            if ( balanceMigrated[bC.pB] == false ) {
+                migrateBalance(bC.pB);
+            }
+            require(bC.state == 2, "bContract is not open");
+            require(bC.openTime <= block.timestamp, "bContract is not old enough");
+            require(!refuseMigrations[bC.pA] && !refuseMigrations[bC.pB], "One of the counterparty refuse migration");
+            bC.state = 4;
+            pio.setBContract(bContractId[i], bC);
+            emit bContractMigrated(bContractId[i]);
+        }
+    }
+
 }
