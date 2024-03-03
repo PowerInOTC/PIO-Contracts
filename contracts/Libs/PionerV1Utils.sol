@@ -16,15 +16,16 @@ library PionerV1Utils {
     enum kycType {0: unasigned, , 1: self, 2: oneWayOneSide, 3: twoWayOneSide, 4: oneWayTwoSide, 5: twoWayTwoSide, 6: mint, 7: fundOneWay, 8: fundTwoWay, 9: fundManager, 10 : trusted}   
     enum bOrType {1 : Pyth, 2: Chainlink, 3: Dummy, 4 : Pion}
 */
-    struct upnlSig {
+    struct pionSign {
         int256 appId;
         bytes reqId;
-        bytes32 asset1;
-        bytes32 asset2;
-        uint256 lastBid;
-        uint256 lastAsk;
-        uint256 confidence;
-        uint256 signTime;
+        bytes32 requestAsset1;
+        bytes32 requestAsset2;
+        uint256 requestPairBid;
+        uint256 requestPairAsk;
+        uint256 requestConfidence;
+        uint256 requestSignTime;
+        uint256 requestPrecision;
         // SchnorrSign
         uint256 signature; 
         address owner;
@@ -97,6 +98,7 @@ library PionerV1Utils {
         uint256 x;
         uint8 parity;
         uint256 maxDelay;
+        uint256 precision;
 
         uint256 lastPrice;
         uint256 lastPriceUpdateTime; 
@@ -226,6 +228,7 @@ library PionerV1Utils {
         bytes32 asset1;
         bytes32 asset2;
         uint256 maxDelay;
+        uint256 precision;
         uint256 imA;
         uint256 imB;
         uint256 dfA;

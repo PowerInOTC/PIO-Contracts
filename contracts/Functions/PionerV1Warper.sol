@@ -42,12 +42,12 @@ contract PionerV1Warper is EIP712 {
         oracle = PionerV1Oracle(pionerV1OracleAddress);
     }
 
-    function warpperUpdatePriceAndDefault( utils.upnlSig memory priceSignature,uint256 bOracleId,uint256 bContractId ) public {
+    function warpperUpdatePriceAndDefault( utils.pionSign memory priceSignature,uint256 bOracleId,uint256 bContractId ) public {
         oracle.updatePricePion(priceSignature, bOracleId );
         settle.settleAndLiquidate( bContractId);
     }
 
-    function warpperUpdatePriceAndCloseMarket( utils.upnlSig memory priceSignature,uint256 bOracleId,uint256 bCloseQuoteId,uint256 index ) public {
+    function warpperUpdatePriceAndCloseMarket( utils.pionSign memory priceSignature,uint256 bOracleId,uint256 bCloseQuoteId,uint256 index ) public {
         oracle.updatePricePion( priceSignature, bOracleId );
         close.closeMarket(bCloseQuoteId, index);
     }
@@ -72,6 +72,7 @@ contract PionerV1Warper is EIP712 {
         uint8 _parity,
         uint256 _maxConfidence,
         uint256 _maxDelay,
+        uint256 precision,
         uint256 _imA,
         uint256 _imB,
         uint256 _dfA,
@@ -98,6 +99,7 @@ contract PionerV1Warper is EIP712 {
             _asset1,
             _asset2,
             _maxDelay,
+            precision,
             _imA,
             _imB,
             _dfA,
@@ -130,6 +132,7 @@ contract PionerV1Warper is EIP712 {
             bOracleSign.parity,
             bOracleSign.maxConfidence,
             bOracleSign.maxDelay,
+            bOracleSign.precision,
             bOracleSign.imA,
             bOracleSign.imB,
             bOracleSign.dfA,
@@ -144,7 +147,7 @@ contract PionerV1Warper is EIP712 {
         address signer = ECDSA.recover(hash, signaturebOracleSign);
 
         oracle.deployBOraclePion(
-            bOracleSign.x, bOracleSign.parity, bOracleSign.maxConfidence, bOracleSign.asset1, bOracleSign.asset2, bOracleSign.maxDelay, 
+            bOracleSign.x, bOracleSign.parity, bOracleSign.maxConfidence, bOracleSign.asset1, bOracleSign.asset2, bOracleSign.maxDelay, bOracleSign.precision, 
             bOracleSign.imA, bOracleSign.imB, bOracleSign.dfA, bOracleSign.dfB, 
             bOracleSign.expiryA, bOracleSign.expiryB, bOracleSign.timeLockA, bOracleSign.timeLockA, 1 
         );

@@ -71,6 +71,7 @@ contract PionerV1Oracle {
         bytes32 _asset1,
         bytes32 _asset2,
         uint256 _maxDelay,
+        uint256 _precision,
         uint256 _imA,
         uint256 _imB,
         uint256 _dfA,
@@ -89,6 +90,7 @@ contract PionerV1Oracle {
         bO.asset2 = _asset2;
         bO.oracleType = 4;
         bO.maxConfidence = _maxConfidence;
+        bO.precision = _precision;
         bO.imA = _imA;
         bO.imB = _imB;
         bO.dfA = _dfA;
@@ -107,19 +109,20 @@ contract PionerV1Oracle {
     }
 
 
-    function updatePricePion(utils.upnlSig memory priceSignature, uint256 bOracleId ) public{
+    function updatePricePion(utils.pionSign memory priceSignature, uint256 bOracleId ) public{
         utils.bOracle memory bO = pio.getBOracle(bOracleId);
 
         bytes32 hash = keccak256(
             abi.encodePacked(
                 priceSignature.appId,
                 priceSignature.reqId,
-                priceSignature.asset1,
-                priceSignature.asset2,
-                priceSignature.lastBid,
-                priceSignature.lastBid,
-                priceSignature.confidence,
-                priceSignature.signTime
+                priceSignature.requestAsset1,
+                priceSignature.requestAsset2,
+                priceSignature.requestPairBid,
+                priceSignature.requestPairAsk,
+                priceSignature.requestConfidence,
+                priceSignature.requestSignTime,
+                priceSignature.requestPrecision
             )
         );
     /*
@@ -130,21 +133,22 @@ contract PionerV1Oracle {
             uint256(hash), 
             priceSignature.nonce
         );
-        
         require(verified, "Invalid signature.");
 */
         require( 
-            bO.lastPriceUpdateTime < priceSignature.signTime
+            bO.lastPriceUpdateTime < priceSignature.requestSignTime
             && bO.oracleType == 4
-            && bO.asset1 == priceSignature.asset1 
-            && bO.asset2 == priceSignature.asset2 
-            && priceSignature.signTime + bO.maxDelay>= block.timestamp 
-            && priceSignature.confidence <= bO.maxConfidence, "wrong signature parameter" );
+            && bO.asset1 == priceSignature.requestAsset1 
+            && bO.asset2 == priceSignature.requestAsset2 
+            && priceSignature.requestSignTime + bO.maxDelay>= block.timestamp 
+            && priceSignature.requestConfidence <= bO.maxConfidence
+            //&& priceSignature.requestPrecision == bO.precision
+                , "wrong signature parameter" );
  
-        bO.lastBid = priceSignature.lastBid;
-        bO.lastAsk = priceSignature.lastAsk;
+        bO.lastBid = priceSignature.requestPairBid;
+        bO.lastAsk = priceSignature.requestPairAsk;
         bO.lastPrice = ( bO.lastBid + bO.lastAsk )/2 ;
-        bO.lastPriceUpdateTime = priceSignature.signTime;
+        bO.lastPriceUpdateTime = priceSignature.requestSignTime;
         pio.setBOracle(bOracleId, bO);
     }
 
