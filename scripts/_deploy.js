@@ -135,7 +135,6 @@ async function main() {
     pionerV1Warper.target
   );
 
-  console.log("const PionerV1UtilsAddress = ^", pionerV1Utils.target, "^");
   console.log("const FakeUSDAddress = ^", fakeUSD.target, "^");
   console.log("const PionerV1Address = ^", pionerV1.target, "^");
   console.log("const PionerV1ComplianceAddress = ^", pionerV1Compliance.target, "^");

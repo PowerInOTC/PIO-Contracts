@@ -5,17 +5,7 @@ import "hardhat/console.sol";
 
 
 library PionerV1Utils {
-    /*
-    enum cState {1: Quote, 2: Open, 3: Closed, 4: Canceled, 5: Liquidated}
-    enum cType { 1: Swap, 2: Call, 3: Put, 4: SwapBidAsk}
-    enum forceCloseType{ 1: Market, 2: TOT}
-    // two side only when both party of a trade mustkyced 
-	// oneWay when anyone can subscribe // twoWay whenkyc need a confirmation
-	// mint is a oneWayOneSide
-    // trusted is against a single party without settlement obligations.
-    enum kycType {0: unasigned, , 1: self, 2: oneWayOneSide, 3: twoWayOneSide, 4: oneWayTwoSide, 5: twoWayTwoSide, 6: mint, 7: fundOneWay, 8: fundTwoWay, 9: fundManager, 10 : trusted}   
-    enum bOrType {1 : Pyth, 2: Chainlink, 3: Dummy, 4 : Pion}
-*/
+
     struct pionSign {
         int256 appId;
         bytes reqId;
@@ -25,7 +15,6 @@ library PionerV1Utils {
         uint256 requestConfidence;
         uint256 requestSignTime;
         uint256 requestPrecision;
-        // SchnorrSign
         uint256 signature; 
         address owner;
         address nonce;
@@ -67,12 +56,11 @@ library PionerV1Utils {
         bool transferSide;
     }
 
-    //Struct for Close Quote ( Limit Close )
-    struct bCloseQuote { // exit quote
+    struct bCloseQuote { 
         uint256[] bContractIds;
         uint256[] price;
         uint256[] amount;
-        uint256[] limitOrStop; // if non 0, quotePrice
+        uint256[] limitOrStop; 
         uint256[] expiry;
         address initiator; 
         uint256 cancelTime;
@@ -80,15 +68,12 @@ library PionerV1Utils {
         uint256 state;
     } 
 
-    //Struct for Oracle
     struct bOracle{
         bytes32 assetHex;
         uint256 oracleType;
-        // Pyth
         address priceFeedAddress;
         bytes32 pythAddress1;
         bytes32 pythAddress2;
-        // Pion
         uint256 lastBid;
         uint256 lastAsk;
         address publicOracleAddress;
@@ -114,67 +99,6 @@ library PionerV1Utils {
         uint256 deployTime;
         uint256 marketCloseFee;
     }
-
-    /* 
-    struct bOracle{
-        uint256 OracleUpdateId;
-        uint256 CCPId;
-
-        uint256 lastBid;
-        uint256 lastAsk;
-
-        uint256 lastPrice;
-        uint256 lastPriceUpdateTime; 
-        uint256 imA;
-        uint256 imB;
-        uint256 dfA;
-        uint256 dfB;
-        uint256 expiryA;
-        uint256 expiryB;
-        uint256 timeLock; 
-        uint256 cType;
-        uint256 forceCloseType;
-        address kycAddress; 
-        bool isPaused;
-        uint256 deployTime;
-        uint256 marketCloseFee;
-    }
-
-    struct bOracleRules{
-
-    }
-
-
-    struct bOracleUpdate {
-        uint256 oracleType;
-        // pyth
-        address priceFeedAddress;
-        bytes32 pythAddress1;
-        bytes32 pythAddress2;
-        // pion
-        bytes32 assetHex;
-        bytes32 asset2;
-        address publicOracleAddress;
-        uint256 maxConfidence;
-        uint256 x;
-        uint8 parity;
-        uint256 maxDelay;
-    }
-    
-    struct CCP{
-
-        address ccpDAO;
-        uint256 longamount;
-        uint256 shortamount;
-        uint256 avgLongOpenPrice;
-        uint256 avgShortOpenPrice;
-        uint256 maxLongOI;
-        uint256 maxShortOI;
-        uint256 ir;
-        uint256 volatilityThreshold; // not add to owed if pass that threshold
-        }
-        */
-
 
     struct  OpenQuoteSign {
         bool isLong;
@@ -235,41 +159,6 @@ library PionerV1Utils {
         bytes signatureHashOpenQuote;
         uint256 nonce;
     }
-/*
-    struct bContractIr {
-        uint256 flatRateA;
-        uint256 flatRateB;
-        uint256 payementFrequency;
-        uint256 caps;
-        uint256 floor;
-    }
-
-    struct boracleIr {
-        bytes32 assetA;
-        bytes32 assetB;
-        bytes32 irA;
-        bytes32 irB;
-        uint256 benchMarkMethod;
-    }
-*/
-    function int64ToUint256(int64 value) public pure returns (uint256) {
-        require(value >= 0, "Cannot cast negative int64 to uint256");
-
-        int256 intermediate = int256(value);
-        uint256 convertedValue = uint256(intermediate);
-
-        return convertedValue;
-    }
-
-
-    function bytesToUint256(bytes memory b) public pure returns (uint256 result) {
-    require(b.length >= 32, "Input too short");
-    
-    assembly {
-        result := mload(add(b, 32)) 
-    }
-}
-
 
     function dynamicIm(uint256 price, uint256 lastPrice, uint256 amount, uint256 im, uint256 df) public pure returns(uint256)  { 
         if( price >= lastPrice ){
@@ -280,7 +169,6 @@ library PionerV1Utils {
         }
     }
 
-    // return true if negative
     function calculateuPnl(uint256 price, uint256 lastPrice, uint256 amount, uint256 interestRate, uint256 lastPriceUpdateTime, bool isPayingIr) public view returns (uint256, bool) {
         uint256 ir = calculateIr(interestRate, (block.timestamp - lastPriceUpdateTime), lastPrice, amount);
         uint256 pnl;
@@ -309,7 +197,6 @@ library PionerV1Utils {
         return( rate * time * price / 1e18 * amount / 1e18) / 31536000;
     }
 
-    // getNotional(_bOracle, _bContract, true);
     function getNotional(bOracle memory bO, bContract memory bC, bool isA) public pure returns(uint256) {
         if (isA){
             return(( bO.imA + bO.dfA) * bC.price / 1e18 * bC.amount / 1e18 );

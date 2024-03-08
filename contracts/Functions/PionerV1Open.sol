@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.8.20;
 
-import "../PionerV1.sol";
+import "./PionerV1.sol";
 import "./PionerV1Compliance.sol";
-import { PionerV1Utils as utils } from "../Libs/PionerV1Utils.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { PionerV1Utils as utils } from "../Libs/PionerV1Utils.sol";
 
 
 import "hardhat/console.sol";
@@ -32,6 +32,7 @@ contract PionerV1Open  is EIP712  {
         kyc = PionerV1Compliance(_pionerV1Compliance);
     }
 
+
     function cancelSignedMessageOpen(
         utils.CancelRequestSign calldata cancelRequest,
         bytes calldata signature
@@ -47,11 +48,45 @@ contract PionerV1Open  is EIP712  {
         emit cancelSignedMessageOpenEvent(signer, cancelRequest.targetHash);
     }
 
-
     function openQuoteSigned( 
         utils.OpenQuoteSign calldata openQuoteSign,
         bytes calldata signHash,
-        address warperSigner
+        address warperSigner,
+        uint256 bOracleId,
+        address sender
+        ) public {
+
+        bytes32 structHash = keccak256(abi.encode(
+            keccak256("Quote(bool isLong,uint256 bOracleId,uint256 price,uint256 amount,uint256 interestRate,bool isAPayingAPR,address frontEnd,address affiliate,address authorized,uint256 nonce)"),
+            openQuoteSign.isLong,
+            openQuoteSign.bOracleId,
+            openQuoteSign.price,
+            openQuoteSign.amount,
+            openQuoteSign.interestRate,  
+            openQuoteSign.isAPayingAPR,
+            openQuoteSign.frontEnd,
+            openQuoteSign.affiliate,
+            openQuoteSign.authorized,
+            openQuoteSign.nonce
+            ));
+
+        bytes32 hash = _hashTypedDataV4(structHash);
+        address signer = ECDSA.recover(hash, signHash);
+        require((pio.getCancelledOpenQuotes(signHash, signer)  + pio.getCancelTimeBuffer()) >= block.timestamp || pio.getCancelledOpenQuotes(signHash, signer)  == 0, "Quote expired");
+        pio.setCancelledOpenQuotes(signHash, signer, 1) ;
+
+        require(openQuoteSign.authorized == address(0) || sender == openQuoteSign.authorized, "Invalid signature or unauthorized");
+        require(warperSigner == signer, "signers mismatch");
+        require(msg.sender == pio.getPIONERV1WARPERADDRESS(), "Invalid sender");
+
+        openQuote(openQuoteSign.isLong, bOracleId, openQuoteSign.price, openQuoteSign.amount, openQuoteSign.interestRate, openQuoteSign.isAPayingAPR, openQuoteSign.frontEnd, openQuoteSign.affiliate, signer);
+        emit openQuoteSignedEvent( pio.getBContractLength(), signHash);
+    }
+
+
+    function openQuoteSigned( 
+        utils.OpenQuoteSign calldata openQuoteSign,
+        bytes calldata signHash
         ) public {
 
         bytes32 structHash = keccak256(abi.encode(
@@ -73,10 +108,8 @@ contract PionerV1Open  is EIP712  {
         require((pio.getCancelledOpenQuotes(signHash, signer)  + pio.getCancelTimeBuffer()) >= block.timestamp || pio.getCancelledOpenQuotes(signHash, signer)  == 0, "Quote expired");
         pio.setCancelledOpenQuotes(signHash, signer, 1) ;
         require(openQuoteSign.authorized == address(0) || signer == openQuoteSign.authorized, "Invalid signature or unauthorized");
-        require(msg.sender == pio.getPIONERV1OPENADDRESS(), "Invalid sender");
-        if(warperSigner != address(0)){
-            require(warperSigner == signer, "warperSigner missmatch");
-        }
+        require(msg.sender == pio.getPIONERV1WARPERADDRESS(), "Invalid sender");
+
         openQuote(openQuoteSign.isLong, openQuoteSign.bOracleId, openQuoteSign.price, openQuoteSign.amount, openQuoteSign.interestRate, openQuoteSign.isAPayingAPR, openQuoteSign.frontEnd, openQuoteSign.affiliate, signer);
         emit openQuoteSignedEvent( pio.getBContractLength(), signHash);
     }
@@ -153,19 +186,24 @@ contract PionerV1Open  is EIP712  {
         address signer = ECDSA.recover(hash, signHash);
         require((pio.getCancelledOpenQuotes(signHash, signer)  + pio.getCancelTimeBuffer()) <= block.timestamp || pio.getCancelledOpenQuotes(signHash, signer)  == 0, "Quote expired");
         pio.setCancelledOpenQuotes(signHash, signer, block.timestamp - pio.getCancelTimeBuffer() -1);
-        acceptQuote(AcceptOpenQuoteSign.bContractId, AcceptOpenQuoteSign.acceptPrice, AcceptOpenQuoteSign.backendAffiliate, signer);
+        acceptQuote(AcceptOpenQuoteSign.bContractId, AcceptOpenQuoteSign.acceptPrice, signer);
     }
 
-    function acceptQuote( uint256 bContractId, uint256 acceptPrice, address backendAffiliate) public {
-        acceptQuote(bContractId, acceptPrice, backendAffiliate, msg.sender);
+    function acceptQuoteWarper( uint256 bContractId, uint256 acceptPrice,address target) public {
+        require(msg.sender == pio.getPIONERV1WARPERADDRESS());
+        acceptQuote(bContractId, acceptPrice, target);
     }
 
-    function acceptQuote(uint256 bContractId, uint256 acceptPrice, address backendAffiliate, address target) internal {
+    function acceptQuote( uint256 bContractId, uint256 acceptPrice) public {
+        acceptQuote(bContractId, acceptPrice, msg.sender);
+    }
+
+    function acceptQuote(uint256 bContractId, uint256 acceptPrice, address target) internal {
         utils.bContract memory bC = pio.getBContract(bContractId);
         utils.bOracle memory bO = pio.getBOracle(bC.oracleId);
 
         require( pio.getOpenPositionNumber(target) < pio.getMaxOpenPositions(), "Open21" );
-        require(kyc.kycCheck(target , bC.initiator), "Open21b");   
+        require(kyc.kycCheck(target , bC.initiator), "Open21b");  
 
         if (bC.state == 1){
             if (bC.initiator == bC.pA){
@@ -186,10 +224,8 @@ contract PionerV1Open  is EIP712  {
                 pio.addCumImBalances(target, bO.imA * notional); // @mint
                 pio.setBalance( ((bO.imB + bO.dfB) * (acceptPrice - bC.price) / 1e18 * bC.amount / 1e18) , bC.pB, address(0), true, true);
                 pio.removeCumImBalances(target, bO.imA * bC.amount / 1e18 * (acceptPrice - bC.price) / 1e18 ); // @mint
-                pio.payTradingFeeShare( pio.getFeeShare(bC.affiliate) * notional ,bC.affiliate, backendAffiliate);
             }
             bC.openTime = block.timestamp;
-            bC.hedger = backendAffiliate;
             bC.state = 2;
             pio.addOpenPositionNumber(target);
             pio.setBContract(bContractId, bC);

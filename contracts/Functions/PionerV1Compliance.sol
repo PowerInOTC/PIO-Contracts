@@ -3,8 +3,8 @@ pragma solidity >=0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "../PionerV1.sol";
-//import { PionerV1Utils as utils } from "../Libs/PionerV1Utils.sol";
+import "./PionerV1.sol";
+import { PionerV1Utils as utils } from "../Libs/PionerV1Utils.sol";
 
 
 /**
@@ -15,6 +15,7 @@ import "../PionerV1.sol";
  */
 contract PionerV1Compliance {
     using SafeERC20 for IERC20;
+    using utils for *;
 
     PionerV1 private pio;
 

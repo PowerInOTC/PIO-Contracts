@@ -2,12 +2,14 @@
 pragma solidity >=0.8.20;
 // LICENSE.txt at : https://www.pioner.io/license
 
-import "../PionerV1.sol";
+import "./PionerV1.sol";
 import "./PionerV1Compliance.sol";
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { PionerV1Utils as utils } from "../Libs/PionerV1Utils.sol";
+
 
 /**
  * @title PionerV1 Close
@@ -51,7 +53,8 @@ contract PionerV1Close is EIP712 {
 
     function openCloseQuoteSigned(
         utils.OpenCloseQuoteSign calldata quote,
-        bytes calldata signHash
+        bytes calldata signHash,
+        address warperSigner
     ) public {
         bytes32 structHash = keccak256(abi.encode(
             keccak256("OpenCloseQuote(uint256 bContractId,uint256 price,uint256 amount,uint256 limitOrStop,uint256 expiry,address authorized,uint256 nonce)"),
@@ -68,7 +71,7 @@ contract PionerV1Close is EIP712 {
         require((pio.getCancelledCloseQuotes(signHash, signer) + pio.getCancelTimeBuffer()) >= block.timestamp || pio.getCancelledCloseQuotes(signHash, signer) == 0, "Quote expired");
         pio.setCancelledCloseQuotes(signHash, signer, block.timestamp - pio.getCancelTimeBuffer() - 1);
 
-        require(signer == quote.authorized || quote.authorized == address(0), "Invalid signature or unauthorized");
+        require(warperSigner == quote.authorized || quote.authorized == address(0), "Invalid signature or unauthorized");
         require(quote.amount != 0 && quote.price != 0, "Invalid parameters");
 
         uint256[] memory bContractIds = new uint256[](1);
@@ -133,9 +136,17 @@ contract PionerV1Close is EIP712 {
         emit openCloseQuoteEvent(pio.getBCloseQuoteLength() - 1 );
     }
 
+     function acceptCloseQuote( uint256 bCloseQuoteId, uint256 index, uint256 amount ) public{
+        acceptCloseQuoteCore( bCloseQuoteId, index, amount, msg.sender );
+     }
 
+
+    function acceptCloseQuoteWarper( uint256 bCloseQuoteId, uint256 index, uint256 amount, address target ) public{
+        require( msg.sender == pio.getPIONERV1WARPERADDRESS(), "Not Warper" );
+        acceptCloseQuoteCore( bCloseQuoteId, index, amount, target );
+     }
     
-    function acceptCloseQuote( uint256 bCloseQuoteId, uint256 index, uint256 amount ) public {
+    function acceptCloseQuoteCore( uint256 bCloseQuoteId, uint256 index, uint256 amount, address target ) internal {
         utils.bCloseQuote memory _bCloseQuote = pio.getBCloseQuote(bCloseQuoteId);
         utils.bContract memory bC = pio.getBContract(_bCloseQuote.bContractIds[0]);
         utils.bOracle memory bO = pio.getBOracle(bC.oracleId);
@@ -148,7 +159,7 @@ contract PionerV1Close is EIP712 {
         (uint256 uPnl, bool isNegative) = utils.calculateuPnl( bC.price, _bCloseQuote.price[index], amount, bC.interestRate, bC.openTime , bC.isAPayingAPR);
 
         if (_bCloseQuote.initiator == bC.pA ) { 
-            require( msg.sender == bC.pB, "Close24");
+            require( target == bC.pB, "Close24");
             if (_bCloseQuote.limitOrStop[index] >0){  // stop limit
                 require(bO.lastPrice >= _bCloseQuote.limitOrStop[index], "Close25" );
             }
@@ -156,7 +167,7 @@ contract PionerV1Close is EIP712 {
                 //require( bO.lastPrice <= _bCloseQuote.price[index], "Close26");
             }
         } else if ( _bCloseQuote.initiator == bC.pB ){
-            require( msg.sender == bC.pA, "Close27");
+            require( target == bC.pA, "Close27");
             if (_bCloseQuote.limitOrStop[index] >0){
                 require(bO.lastPrice <= _bCloseQuote.limitOrStop[index], "Close28" );
             }

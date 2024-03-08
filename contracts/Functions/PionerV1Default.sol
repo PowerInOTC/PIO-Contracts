@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.8.20;
 
-import "../PionerV1.sol";
+import "./PionerV1.sol";
 import "./PionerV1Compliance.sol";
 
 import "hardhat/console.sol";
+
+import { PionerV1Utils as utils } from "../Libs/PionerV1Utils.sol";
+
 
 
 /**

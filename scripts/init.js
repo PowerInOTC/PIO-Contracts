@@ -3,15 +3,16 @@ const hre = require("hardhat");
 async function main() {
   const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
   
-  const PionerV1UtilsAddress = "0x40F62fde4AfbD69Fa6bD88e5d9f81acc829F7fA3"
-  const FakeUSDAddress = "0xbae8Aa70a95b01F65576777aB4a5347B1f2fAa54"
-  const PionerV1Address = "0x6655165a06985be6affc4F9A296A8c7F68a79b66"
-  const PionerV1ComplianceAddress = "0xF02C79B33975f4bf82FCbaAE1d0Cd36A19552DC9"
-  const PionerV1OpenAddress = "0xd3209eC0f12486EC108Ed467E136330c227938D4"
-  const PionerV1CloseAddress = "0x1Ef2D695bB0eE1c5889Ff3d867b69Cd1CaaA92df"
-  const PionerV1DefaultAddress = "0x833bC52C336bB3F259c4043da9CA1CB66D7aD7ad"
-  const PionerV1StableAddress = "0xFFeD4280bDD04941193EaFDf25b06f4aEC622cF6"
-  const PionerV1ViewAddress = "0x80820c8cdd9aCdbE2f899308F61ecbeA1174524C"
+  const PionerV1UtilsAddress = "0xb400785D741F8815c657A03Eebb04944eb7D7b9C"
+  const FakeUSDAddress = "0x60a75B099Fe78Cb7Fad097bF2C082c467686ecd5"
+  const PionerV1Address = "0xEA0224877722d59aef9c16aafD83d132634bDaC1"
+  const PionerV1ComplianceAddress = "0xD6C07Ed68941B2B75c7A42008C446DDf67795ecf"
+  const PionerV1OpenAddress = "0x4549500cb81DDA59fF8cB21b7b77C630181cDFA5"
+  const PionerV1CloseAddress = "0x8Fe0bcCAFA648b093C448ed8Bb732F65Cef734c2"
+  const PionerV1DefaultAddress = "0x91570188747272F90DFF014def0109B399b7d63f"
+  const PionerV1ViewAddress = "0xc11f825fF2A7Ac7bD4F4B28bDEdbbFA5BaeEC0D9"
+  const PionerV1OracleAddress = "0xf447AbDcADC871EF6E366f26DBA663bACE45dD5d"
+  const PionerV1WarperAddress = "0x3941DdF936ffe2de5Cd3648ac5ee2c0F8C171A67"
 
   const PionerV1Compliance = await hre.ethers.getContractFactory("PionerV1Compliance");
   const pionerV1Compliance = PionerV1Compliance.attach(PionerV1ComplianceAddress);
