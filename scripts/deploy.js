@@ -135,36 +135,16 @@ async function main() {
     pionerV1Warper.target
   );
 
-  console.log("const PionerV1UtilsAddress = ^", pionerV1Utils.target, "^");
-  console.log("const FakeUSDAddress = ^", fakeUSD.target, "^");
-  console.log("const PionerV1Address = ^", pionerV1.target, "^");
-  console.log("const PionerV1ComplianceAddress = ^", pionerV1Compliance.target, "^");
-  console.log("const PionerV1OpenAddress = ^", pionerV1Open.target, "^");
-  console.log("const PionerV1CloseAddress = ^", pionerV1Close.target, "^");
-  console.log("const PionerV1DefaultAddress = ^", pionerV1Default.target, "^");
-  console.log("const PionerV1ViewAddress = ^", pionerV1View.target, "^"); 
-  console.log("const PionerV1OracleAddress = ^", pionerV1Oracle.target, "^"); 
-  console.log("const PionerV1WarperAddress = ^", pionerV1Warper.target, "^"); 
-
-  /*
-  // Mint FakeUSD tokens to addr1, addr2, and addr3
-  await fakeUSD.mint(ethers.parseUnits("10000", 18));
-  await fakeUSD.mint(ethers.parseUnits("10000", 18));
-  await fakeUSD.mint(ethers.parseUnits("10000", 18));
-  await fakeUSD.mint(ethers.parseUnits("10000", 18));
-  console.log("FakeUSD minted to addresses");
-
-  // Approve and deposit FakeUSD to PionerV1Compliance for addr1, addr2, and addr3
-  await fakeUSD.connect(addr1).approve(pionerV1Compliance.target, ethers.parseUnits("10000", 18));
-  await fakeUSD.connect(addr2).approve(pionerV1Compliance.target, ethers.parseUnits("10000", 18));
-  await fakeUSD.connect(addr3).approve(pionerV1Compliance.target, ethers.parseUnits("10000", 18));
-  await fakeUSD.connect(owner).approve(pionerV1Compliance.target, ethers.parseUnits("10000", 18));
-
-  await pionerV1Compliance.connect(addr1).deposit(ethers.parseUnits("10000", 18), 1, addr1);
-  await pionerV1Compliance.connect(addr2).deposit(ethers.parseUnits("10000", 18), 1, addr2);
-  await pionerV1Compliance.connect(addr3).deposit(ethers.parseUnits("10000", 18), 1, addr3);
-  await pionerV1Compliance.connect(owner).deposit(ethers.parseUnits("10000", 18), 1, owner);
-*/
+  console.log("^PionerV1UtilsAddress^: ^", pionerV1Utils.target, "^");
+  console.log("^FakeUSDAddress^: ^", fakeUSD.target, "^");
+  console.log("^PionerV1Address^: ^", pionerV1.target, "^");
+  console.log("^PionerV1ComplianceAddress^: ^", pionerV1Compliance.target, "^");
+  console.log("^PionerV1OpenAddress^: ^", pionerV1Open.target, "^");
+  console.log("^PionerV1CloseAddress^: ^", pionerV1Close.target, "^");
+  console.log("^PionerV1DefaultAddress^: ^", pionerV1Default.target, "^");
+  console.log("^PionerV1ViewAddress^: ^", pionerV1View.target, "^"); 
+  console.log("^PionerV1OracleAddress^: ^", pionerV1Oracle.target, "^"); 
+  console.log("^PionerV1WarperAddress^: ^", pionerV1Warper.target, "^"); 
 
   console.log("Deployement completed !");
 }

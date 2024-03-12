@@ -99,7 +99,7 @@ async function main() {
   _grace_period = 300 ; 
   _pioner_dao = owner.address ;
   _admin = owner.address ;
-
+/*
   await verifyContract(pionerV1Utils.target, []);
   await verifyContract(fakeUSD.target, []);
   await verifyContract(pionerV1.target, []);
@@ -110,7 +110,7 @@ async function main() {
   await verifyContract(pionerV1View.target, [pionerV1.target, pionerV1Compliance.target]);
   await verifyContract(pionerV1Oracle.target, [pionerV1.target, pionerV1Compliance.target]);
   await verifyContract(pionerV1Warper.target, [pionerV1.target, pionerV1Compliance.target, pionerV1Open.target ,pionerV1Close.target ,pionerV1Default.target, pionerV1Oracle.target]);
-
+*/
 
   // Set contract addresses in PionerV1
   await pionerV1.setContactAddress(
@@ -135,15 +135,17 @@ async function main() {
     pionerV1Warper.target
   );
 
-  console.log("const FakeUSDAddress = ^", fakeUSD.target, "^");
-  console.log("const PionerV1Address = ^", pionerV1.target, "^");
-  console.log("const PionerV1ComplianceAddress = ^", pionerV1Compliance.target, "^");
-  console.log("const PionerV1OpenAddress = ^", pionerV1Open.target, "^");
-  console.log("const PionerV1CloseAddress = ^", pionerV1Close.target, "^");
-  console.log("const PionerV1DefaultAddress = ^", pionerV1Default.target, "^");
-  console.log("const PionerV1ViewAddress = ^", pionerV1View.target, "^"); 
-  console.log("const PionerV1OracleAddress = ^", pionerV1Oracle.target, "^"); 
-  console.log("const PionerV1WarperAddress = ^", pionerV1Warper.target, "^"); 
+
+
+  console.log(`"contracts": {"FakeUSDAddress" : "${fakeUSD.target}",
+    "PionerV1Address": "${pionerV1.target}", 
+    "PionerV1ComplianceAddress": "${pionerV1Compliance.target}", 
+    "PionerV1OpenAddress": "${pionerV1Open.target}", 
+    "PionerV1CloseAddress": "${pionerV1Close.target}", 
+    "PionerV1DefaultAddress": "${pionerV1Default.target}", 
+    "PionerV1ViewAddress": ", ${pionerV1View.target}", 
+    "PionerV1OracleAddress": "${pionerV1Oracle.target}", 
+    "PionerV1WarperAddress": "${pionerV1Warper.target}"}`);
 
   /*
   // Mint FakeUSD tokens to addr1, addr2, and addr3
