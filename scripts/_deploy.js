@@ -82,9 +82,9 @@ async function main() {
   await pionerV1Oracle.waitForDeployment();
 
   // Deploy PionerV1Default
-  const PionerV1Warper = await hre.ethers.getContractFactory("PionerV1Warper");
-  const pionerV1Warper = await PionerV1Warper.deploy(pionerV1.target, pionerV1Compliance.target, pionerV1Open.target ,pionerV1Close.target ,pionerV1Default.target, pionerV1Oracle.target);
-  await pionerV1Warper.waitForDeployment();
+  const PionerV1Wrapper = await hre.ethers.getContractFactory("PionerV1Wrapper");
+  const pionerV1Wrapper = await PionerV1Wrapper.deploy(pionerV1.target, pionerV1Compliance.target, pionerV1Open.target ,pionerV1Close.target ,pionerV1Default.target, pionerV1Oracle.target);
+  await pionerV1Wrapper.waitForDeployment();
 
   _daiAddress = fakeUSD.target ;
   _min_notional = ethers.parseUnits("25", 18) ;
@@ -109,7 +109,7 @@ async function main() {
   await verifyContract(pionerV1Default.target, [pionerV1.target, pionerV1Compliance.target]);
   await verifyContract(pionerV1View.target, [pionerV1.target, pionerV1Compliance.target]);
   await verifyContract(pionerV1Oracle.target, [pionerV1.target, pionerV1Compliance.target]);
-  await verifyContract(pionerV1Warper.target, [pionerV1.target, pionerV1Compliance.target, pionerV1Open.target ,pionerV1Close.target ,pionerV1Default.target, pionerV1Oracle.target]);
+  await verifyContract(pionerV1Wrapper.target, [pionerV1.target, pionerV1Compliance.target, pionerV1Open.target ,pionerV1Close.target ,pionerV1Default.target, pionerV1Oracle.target]);
 */
 
   // Set contract addresses in PionerV1
@@ -132,20 +132,20 @@ async function main() {
     pionerV1Default.target,
     pionerV1Compliance.target,
     pionerV1Oracle.target, 
-    pionerV1Warper.target
+    pionerV1Wrapper.target
   );
 
 
 
-  console.log(`"contracts": {"FakeUSDAddress" : "${fakeUSD.target}",
-    "PionerV1Address": "${pionerV1.target}", 
-    "PionerV1ComplianceAddress": "${pionerV1Compliance.target}", 
-    "PionerV1OpenAddress": "${pionerV1Open.target}", 
-    "PionerV1CloseAddress": "${pionerV1Close.target}", 
-    "PionerV1DefaultAddress": "${pionerV1Default.target}", 
-    "PionerV1ViewAddress": ", ${pionerV1View.target}", 
-    "PionerV1OracleAddress": "${pionerV1Oracle.target}", 
-    "PionerV1WarperAddress": "${pionerV1Warper.target}"}`);
+  console.log(`"contracts": {"FakeUSD" : "${fakeUSD.target}",
+    "PionerV1": "${pionerV1.target}", 
+    "PionerV1Compliance": "${pionerV1Compliance.target}", 
+    "PionerV1Open": "${pionerV1Open.target}", 
+    "PionerV1Close": "${pionerV1Close.target}", 
+    "PionerV1Default": "${pionerV1Default.target}", 
+    "PionerV1View": ", ${pionerV1View.target}", 
+    "PionerV1Oracle": "${pionerV1Oracle.target}", 
+    "PionerV1Wrapper": "${pionerV1Wrapper.target}"}`);
 
   /*
   // Mint FakeUSD tokens to addr1, addr2, and addr3

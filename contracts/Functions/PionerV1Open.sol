@@ -51,7 +51,7 @@ contract PionerV1Open  is EIP712  {
     function openQuoteSigned( 
         utils.OpenQuoteSign calldata openQuoteSign,
         bytes calldata signHash,
-        address warperSigner,
+        address wrapperSigner,
         uint256 bOracleId,
         address sender
         ) public {
@@ -76,8 +76,8 @@ contract PionerV1Open  is EIP712  {
         pio.setCancelledOpenQuotes(signHash, signer, 1) ;
 
         require(openQuoteSign.authorized == address(0) || sender == openQuoteSign.authorized, "Invalid signature or unauthorized");
-        require(warperSigner == signer, "signers mismatch");
-        require(msg.sender == pio.getPIONERV1WARPERADDRESS(), "Invalid sender");
+        require(wrapperSigner == signer, "signers mismatch");
+        require(msg.sender == pio.getPIONERV1WRAPPERADDRESS(), "Invalid sender");
 
         openQuote(openQuoteSign.isLong, bOracleId, openQuoteSign.price, openQuoteSign.amount, openQuoteSign.interestRate, openQuoteSign.isAPayingAPR, openQuoteSign.frontEnd, openQuoteSign.affiliate, signer);
         emit openQuoteSignedEvent( pio.getBContractLength(), signHash);
@@ -108,7 +108,7 @@ contract PionerV1Open  is EIP712  {
         require((pio.getCancelledOpenQuotes(signHash, signer)  + pio.getCancelTimeBuffer()) >= block.timestamp || pio.getCancelledOpenQuotes(signHash, signer)  == 0, "Quote expired");
         pio.setCancelledOpenQuotes(signHash, signer, 1) ;
         require(openQuoteSign.authorized == address(0) || signer == openQuoteSign.authorized, "Invalid signature or unauthorized");
-        require(msg.sender == pio.getPIONERV1WARPERADDRESS(), "Invalid sender");
+        require(msg.sender == pio.getPIONERV1WRAPPERADDRESS(), "Invalid sender");
 
         openQuote(openQuoteSign.isLong, openQuoteSign.bOracleId, openQuoteSign.price, openQuoteSign.amount, openQuoteSign.interestRate, openQuoteSign.isAPayingAPR, openQuoteSign.frontEnd, openQuoteSign.affiliate, signer);
         emit openQuoteSignedEvent( pio.getBContractLength(), signHash);
@@ -189,8 +189,8 @@ contract PionerV1Open  is EIP712  {
         acceptQuote(AcceptOpenQuoteSign.bContractId, AcceptOpenQuoteSign.acceptPrice, signer);
     }
 
-    function acceptQuoteWarper( uint256 bContractId, uint256 acceptPrice,address target) public {
-        require(msg.sender == pio.getPIONERV1WARPERADDRESS());
+    function acceptQuotewrapper( uint256 bContractId, uint256 acceptPrice,address target) public {
+        require(msg.sender == pio.getPIONERV1WRAPPERADDRESS());
         acceptQuote(bContractId, acceptPrice, target);
     }
 
@@ -243,7 +243,7 @@ contract PionerV1Open  is EIP712  {
             pio.setBalance( ( bO.imA + bO.dfA ) * bC.amount   / 1e18 * bC.price / 1e18 , msg.sender, address(0), true, false);
             pio.decreaseOpenPositionNumber(msg.sender);
             bC.state = 3; 
-            pio.removeCumImBalances(msg.sender, bO.imA * bC.amount / 1e18 * bC.price / 1e18 ); // @mint
+            pio.removeCumImBalances(msg.sender, bO.imA * bC.amount / 1e18 * bC.price / 1e18 ); // @mintyy
         }
         else{
         require( msg.sender == bC.pB, "Open32" );

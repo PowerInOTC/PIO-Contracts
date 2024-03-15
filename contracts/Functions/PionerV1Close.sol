@@ -26,7 +26,6 @@ contract PionerV1Close is EIP712 {
     event expirateBContractEvent(uint256 indexed bContractId);
     event closeMarketEvent( uint256 indexed bCloseQuoteId);
     event cancelOpenCloseQuoteContractEvent(uint256 indexed bContractId);
-
     event cancelSignedMessageCloseEvent(address indexed sender, bytes indexed messageHash);
 
     constructor(address _pionerV1, address _pionerV1Compliance) EIP712("PionerV1Close", "1.0") {
@@ -54,7 +53,7 @@ contract PionerV1Close is EIP712 {
     function openCloseQuoteSigned(
         utils.OpenCloseQuoteSign calldata quote,
         bytes calldata signHash,
-        address warperSigner
+        address wrapperSigner
     ) public {
         bytes32 structHash = keccak256(abi.encode(
             keccak256("OpenCloseQuote(uint256 bContractId,uint256 price,uint256 amount,uint256 limitOrStop,uint256 expiry,address authorized,uint256 nonce)"),
@@ -71,7 +70,7 @@ contract PionerV1Close is EIP712 {
         require((pio.getCancelledCloseQuotes(signHash, signer) + pio.getCancelTimeBuffer()) >= block.timestamp || pio.getCancelledCloseQuotes(signHash, signer) == 0, "Quote expired");
         pio.setCancelledCloseQuotes(signHash, signer, block.timestamp - pio.getCancelTimeBuffer() - 1);
 
-        require(warperSigner == quote.authorized || quote.authorized == address(0), "Invalid signature or unauthorized");
+        require(wrapperSigner == quote.authorized || quote.authorized == address(0), "Invalid signature or unauthorized");
         require(quote.amount != 0 && quote.price != 0, "Invalid parameters");
 
         uint256[] memory bContractIds = new uint256[](1);
@@ -141,8 +140,8 @@ contract PionerV1Close is EIP712 {
      }
 
 
-    function acceptCloseQuoteWarper( uint256 bCloseQuoteId, uint256 index, uint256 amount, address target ) public{
-        require( msg.sender == pio.getPIONERV1WARPERADDRESS(), "Not Warper" );
+    function acceptCloseQuotewrapper( uint256 bCloseQuoteId, uint256 index, uint256 amount, address target ) public{
+        require( msg.sender == pio.getPIONERV1WRAPPERADDRESS(), "Not wrapper" );
         acceptCloseQuoteCore( bCloseQuoteId, index, amount, target );
      }
     

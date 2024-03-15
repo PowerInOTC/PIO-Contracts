@@ -8,28 +8,26 @@
 {"name":"Manta Pacific Testnet","active":"false","pionerChainId":"mantaTest","config":"Mantle Testnet","chain":"Manta Pacific","rpc":["https://manta-testnet.calderachain.xyz/http"],"faucets":[],"nativeCurrency":{"name":"Manta","symbol":"MANTA","decimals":18},"features":[{"name":"EIP155"},{"name":"EIP1559"}],"infoURL":"https://manta-testnet.caldera.dev/","shortName":"mantaTestnet","chainId":3441005,"networkId":3441005,"slip44":1,"icon":"manta","explorers":[{"name":"manta-testnet Explorer","url":"https://manta-testnet.calderaexplorer.xyz","standard":"EIP3091"}]},
 {"name":"Base Sepolia Testnet","active":"false","pionerChainId":"baseSepoliaTest","config":"Base Sepolia","chain":"ETH","rpc":["https://sepolia.base.org","https://base-sepolia-rpc.publicnode.com","wss://base-sepolia-rpc.publicnode.com"],"faucets":[],"nativeCurrency":{"name":"Sepolia Ether","symbol":"ETH","decimals":18},"infoURL":"https://base.org","shortName":"basesep","chainId":84532,"networkId":84532,"slip44":1,"icon":"baseTestnet","explorers":[{"name":"basescout","url":"https://base-sepolia.blockscout.com","icon":"blockscout","standard":"EIP3091"}]},
 {"name":"Polygon zkEVM Testnet","active":"false","pionerChainId":"zkevmTest","config":"zkEVM Testnet","title":"Polygon zkEVM Testnet","chain":"Polygon","rpc":["https://rpc.public.zkevm-test.net"],"faucets":[],"nativeCurrency":{"name":"Ether","symbol":"ETH","decimals":18},"infoURL":"https://polygon.technology/solutions/polygon-zkevm/","shortName":"testnet-zkEVM-mango","chainId":1442,"networkId":1442,"slip44":1,"explorers":[{"name":"Polygon zkEVM explorer","url":"https://explorer.public.zkevm-test.net","standard":"EIP3091"}]},
-{"name":"Fantom Testnet","active":"true","pionerChainId":"ftmTest","chain":"FTM","rpc":["https://rpc.testnet.fantom.network","https://fantom-testnet-rpc.publicnode.com","wss://fantom-testnet-rpc.publicnode.com"],"faucets":["https://faucet.fantom.network"],"nativeCurrency":{"name":"Fantom","symbol":"FTM","decimals":18},"infoURL":"https://docs.fantom.foundation/quick-start/short-guide#fantom-testnet","shortName":"tftm","chainId":4002,"networkId":4002,"slip44":1,"icon":"fantom","explorers":[{"name":"ftmscan","url":"https://testnet.ftmscan.com","icon":"ftmscan","standard":"EIP3091"}], "contracts":{
-  "FakeUSDAddress": "0xD607412293711928C574a5CcF8AF2e1aca0d4543",
-  "PionerV1Address": "0x6970b2edc9127660107F0bf45302b26324eD144e",
-  "PionerV1ComplianceAddress": "0xa28A5f9285A471f44Be337a9561613F3CDFF4c30",
-  "PionerV1OpenAddress": "0xe5f269aF7bBc228a3701E56dC80eB4a7c62deEE1",
-  "PionerV1CloseAddress": "0x13a1dB4cDCc9A3593D1A3Ba6ac8f6f00e8066436",
-  "PionerV1DefaultAddress": "0xD61Eb7b26F318ccFfd852c8E13b67304D6745eaA",
-  "PionerV1ViewAddress": "0xc6eF68cb69A21cAA37F87F77E24aa988e6ada194",
-  "PionerV1OracleAddress": "0x536bb21e3d900B0d1FE67F18bC9512768bDa3F04",
-  "PionerV1WarperAddress": "0x253f0F673b87F0FdcC99522349eFE31255794945"
-}},
-{"name":"Sonic Testnet","active":"true","pionerChainId":"sonic","rpc":["https://rpcapi.sonic.fantom.network/"],"faucets":["https://app.optimism.io/faucet"], "chainId":64165, "contracts":{
-  "FakeUSDAddress" : "0x60a75B099Fe78Cb7Fad097bF2C082c467686ecd5",
-  "PionerV1Address" : "0xEA0224877722d59aef9c16aafD83d132634bDaC1",
-  "PionerV1ComplianceAddress" : "0xD6C07Ed68941B2B75c7A42008C446DDf67795ecf",
-  "PionerV1OpenAddress" : "0x4549500cb81DDA59fF8cB21b7b77C630181cDFA5",
-  "PionerV1CloseAddress" : "0x8Fe0bcCAFA648b093C448ed8Bb732F65Cef734c2",
-  "PionerV1DefaultAddress" : "0x91570188747272F90DFF014def0109B399b7d63f",
-  "PionerV1ViewAddress" : "0xc11f825fF2A7Ac7bD4F4B28bDEdbbFA5BaeEC0D9",
-  "PionerV1OracleAddress" : "0xf447AbDcADC871EF6E366f26DBA663bACE45dD5d",
-  "PionerV1WarperAddress" : "0x3941DdF936ffe2de5Cd3648ac5ee2c0F8C171A67"
-}}]
+{"name":"Fantom Testnet","active":"true","pionerChainId":"ftmTest","chain":"FTM","rpc":["https://rpc.testnet.fantom.network","https://fantom-testnet-rpc.publicnode.com","wss://fantom-testnet-rpc.publicnode.com"],"faucets":["https://faucet.fantom.network"],"nativeCurrency":{"name":"Fantom","symbol":"FTM","decimals":18},"infoURL":"https://docs.fantom.foundation/quick-start/short-guide#fantom-testnet","shortName":"tftm","chainId":4002,"networkId":4002,"slip44":1,"icon":"fantom","explorers":[{"name":"ftmscan","url":"https://testnet.ftmscan.com","icon":"ftmscan","standard":"EIP3091"}], 
+"contracts": {"FakeUSD" : "0x670F4fF68c0d3Abb9095340a9697424271C2396A",
+    "PionerV1": "0x049e80a02d270142584fA29E956C5ed69D2e5858",
+    "PionerV1Compliance": "0x2d0Bfb309607B65b76Bc8F4613AF41555106e2f8",
+    "PionerV1Open": "0x8C0Bb19Ea0AaD017C60203F0Ad11E7EffEe5a88e",
+    "PionerV1Close": "0x4833d0D8E4805cE6f1B79Dd67657C57ced829123",
+    "PionerV1Default": "0x8100a2a34c5a2B307f3D41a697B796c99cbAb667",
+    "PionerV1View": ", 0x791932E53aE0588ac8ADc766c7401613e9b1823A",
+    "PionerV1Oracle": "0x5f4b144AD9BfD1a54059cAAD46880929a2c85809",
+    "PionerV1Wrapper": "0xA0270aD0A1F3A9Bdb687159E248273A65E6bef2f"}},
+{"name":"Sonic Testnet","active":"true","pionerChainId":"sonic","rpc":["https://rpcapi.sonic.fantom.network/"],"faucets":["https://app.optimism.io/faucet"], "chainId":64165, 
+"contracts": {"FakeUSD" : "0x6A744031609cfCef46AaC03F516550FB73Cc1390",
+    "PionerV1": "0x0522ffEAE4Fd670f63482E969FD4B1dE8866F972",
+    "PionerV1Compliance": "0xf82C9516268C6DE94d99d18706769377113861C3",
+    "PionerV1Open": "0xF9d4DeD362a9C2728be18eE62A7E3076054b3279",
+    "PionerV1Close": "0xb638b9d2390FF58a6Abf9aF33337F98071758D98",
+    "PionerV1Default": "0x874547948f91477848f2C36d8B06f52aB7AEfD47",
+    "PionerV1View": ", 0x5C718738486D8130b8BD628d27bc01A86EB17a8f",
+    "PionerV1Oracle": "0xBA8c5eF77B76e8dA166eFE11415Aac91B969579B",
+    "PionerV1Wrapper": "0x271990c7a1BDD612EC4c60492b24Dc693af67198"}}]
 
 
 

@@ -14,12 +14,12 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { PionerV1Utils as utils } from "../Libs/PionerV1Utils.sol";
 
 /**
- * @title PionerV1 Warper
- * @dev This contract manage warpers function for UX purposes.
+ * @title PionerV1 wrapper
+ * @dev This contract manage wrappers function for UX purposes.
  * @notice This contract is not audited
  * @author Microderiv
  */
-contract PionerV1Warper is EIP712 {
+contract PionerV1Wrapper is EIP712 {
     PionerV1 private pio;
     PionerV1Compliance private compliance;
     PionerV1Open private open;
@@ -34,7 +34,7 @@ contract PionerV1Warper is EIP712 {
             , address pionerV1CloseAddress
             , address pionerV1DefaultAddress
             , address pionerV1OracleAddress 
-            )  EIP712("PionerV1Warper", "1.0"){
+            )  EIP712("PionerV1Wrapper", "1.0"){
         pio = PionerV1(pionerV1Address);
         compliance = PionerV1Compliance(pionerV1ComplianceAddress);
         open = PionerV1Open(pionerV1OpenAddress);
@@ -43,19 +43,19 @@ contract PionerV1Warper is EIP712 {
         oracle = PionerV1Oracle(pionerV1OracleAddress);
     }
 
-    function warpperUpdatePriceAndDefault( utils.pionSign memory priceSignature,uint256 bOracleId,uint256 bContractId ) public {
+    function wrapperUpdatePriceAndDefault( utils.pionSign memory priceSignature,uint256 bOracleId,uint256 bContractId ) public {
         oracle.updatePricePion(priceSignature, bOracleId );
         settle.settleAndLiquidate( bContractId);
     }
 
-    function warpperUpdatePriceAndCloseMarket( utils.pionSign memory priceSignature,uint256 bOracleId,uint256 bCloseQuoteId,uint256 index ) public {
+    function wrapperUpdatePriceAndCloseMarket( utils.pionSign memory priceSignature,uint256 bOracleId,uint256 bCloseQuoteId,uint256 index ) public {
         oracle.updatePricePion( priceSignature, bOracleId );
         close.closeMarket(bCloseQuoteId, index);
     }
 
-    function warperCloseLimitMM( utils.OpenCloseQuoteSign calldata quote, bytes calldata signHash ) public {
+    function wrapperCloseLimitMM( utils.OpenCloseQuoteSign calldata quote, bytes calldata signHash ) public {
         close.openCloseQuoteSigned( quote, signHash, msg.sender ); 
-        close.acceptCloseQuoteWarper(pio.getBCloseQuoteLength() - 1, 0 , quote.amount, msg.sender );
+        close.acceptCloseQuotewrapper(pio.getBCloseQuoteLength() - 1, 0 , quote.amount, msg.sender );
     }
     
 
@@ -118,7 +118,7 @@ contract PionerV1Warper is EIP712 {
     }
     
     /// @dev This function is used by hedging bots to open a quote and deploy a Pion Oracle
-    function warperOpenQuoteMM(
+    function wrapperOpenQuoteMM(
         utils.bOracleSign calldata bOracleSign,
         bytes calldata signaturebOracleSign,
         utils.OpenQuoteSign calldata openQuoteSign,
@@ -155,12 +155,12 @@ contract PionerV1Warper is EIP712 {
             bOracleSign.expiryA, bOracleSign.expiryB, bOracleSign.timeLock, 1 
         );
         open.openQuoteSigned(openQuoteSign, openQuoteSignature, signer, pio.getBOracleLength() - 1, msg.sender);
-        open.acceptQuoteWarper(pio.getBContractLength() - 1, _acceptPrice, msg.sender);
+        open.acceptQuotewrapper(pio.getBContractLength() - 1, _acceptPrice, msg.sender);
     }
 
 /*
         /// @dev This functino is used to push a signed accept quote in case accepting counterparty does not do it
-    function warperOpenQuoteAPI(
+    function wrapperOpenQuoteAPI(
         utils.bOracleSign calldata bOracleSign,
         bytes calldata signaturebOracleSign,
         utils.OpenQuoteSign calldata openQuoteSign,

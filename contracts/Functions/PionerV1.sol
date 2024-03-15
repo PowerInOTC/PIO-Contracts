@@ -43,7 +43,7 @@ contract PionerV1 is MuonClientBase  {
     address internal PIONERV1FLATCOIN;
     address internal PIONERV1MANAGEMENT;
     address internal PIONERV1ORACLE;
-    address internal PIONERV1WARPER;
+    address internal PIONERV1WRAPPER;
     
     modifier onlyContracts() {
         require(
@@ -57,14 +57,14 @@ contract PionerV1 is MuonClientBase  {
             //msg.sender == PIONERV1MANAGEMENT ||
             msg.sender == PIONERV1COMPLIANCE ||
             msg.sender == PIONERV1ORACLE ||
-            msg.sender == PIONERV1WARPER ,
+            msg.sender == PIONERV1WRAPPER ,
             "Caller not authorized"
         );
         _;
     }
 
-    function getPIONERV1WARPERADDRESS() external view returns (address) {
-        return PIONERV1WARPER;
+    function getPIONERV1WRAPPERADDRESS() external view returns (address) {
+        return PIONERV1WRAPPER;
     }
 
     mapping( address => uint256) internal balances; 
@@ -606,7 +606,7 @@ contract PionerV1 is MuonClientBase  {
         address _PIONERV1DEFAULT,
         address _PIONERV1COMPLIANCE,
         address _PIONERV1ORACLE ,
-        address _PIONERV1WARPER  ) public {
+        address _PIONERV1WRAPPER  ) public {
         require(ISCONTRACTINIT == false);
         BALANCETOKEN = IERC20(daiAddress);
         MIN_NOTIONAL = min_notional;
@@ -626,7 +626,7 @@ contract PionerV1 is MuonClientBase  {
         PIONERV1DEFAULT = _PIONERV1DEFAULT;
         PIONERV1COMPLIANCE = _PIONERV1COMPLIANCE;
         PIONERV1ORACLE = _PIONERV1ORACLE;
-        PIONERV1WARPER = _PIONERV1WARPER;
+        PIONERV1WRAPPER = _PIONERV1WRAPPER;
         ISCONTRACTINIT = true;
     }
 
