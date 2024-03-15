@@ -129,10 +129,6 @@ describe("PionerV1Close Signatures Contract", function () {
     const initialBalanceAddr2 = await pionerV1.getBalance(addr2);
 
     console.log("balances : ",BigInt(initialBalanceAddr1)/BigInt(1e18),BigInt(initialBalanceAddr2)/BigInt(1e18));
- 
-
-
-
 
     const domainOpen = {
       name: 'PionerV1Open',
@@ -213,12 +209,7 @@ describe("PionerV1Close Signatures Contract", function () {
     nonce: 0
   };
 
-
     const signaturebOracleSign = await addr1.signTypedData(domainWarper, bOracleSignType, bOracleSignValue);
-
-    const bContractLength = await pionerV1.getBContractLength();
-    const _bContractId = bContractLength - BigInt(1);
-    const bOracleLength = await pionerV1.getBOracleLength();
 
     const _acceptPrice = ethers.parseUnits("50", 18);
 
@@ -229,11 +220,13 @@ describe("PionerV1Close Signatures Contract", function () {
       openQuoteSignature,
       _acceptPrice
     );
+
+    const bContractLength = await pionerV1.getBContractLength();
+    const _bContractId = bContractLength - BigInt(1);
+    const bOracleLength = await pionerV1.getBOracleLength();
     await network.provider.send("evm_increaseTime", [1 * 24 * 60 * 60]);
     await network.provider.send("evm_mine");
 
-
-    
     const domainClose = {
       name: 'PionerV1Close',
       version: '1.0',
@@ -273,7 +266,6 @@ describe("PionerV1Close Signatures Contract", function () {
     console.log("balances : ",BigInt(finalBalanceAddr1)/BigInt(1e18),BigInt(finalBalanceAddr2)/BigInt(1e18), BigInt(owedAmount1)/BigInt(1e18), BigInt(owedAmount2)/BigInt(1e18));
   });
 
- 
 
 });
 

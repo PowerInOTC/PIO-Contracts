@@ -1,3 +1,4 @@
+// config.js
 const fs = require('fs');
 const ethers = require('ethers');
 const dotenv = require('dotenv');
@@ -20,9 +21,12 @@ for (const chain of activeChains) {
   configs[pionerChainId] = {
     network: {
       rpcUrl: chain.rpc[0],
+      chainId: chain.chainId,
       privateKeys: process.env.PRIVATE_KEYS.split(',')
     },
     contracts: {
+      // Define contract configurations here
+      // Add new contracts or update existing ones as needed
       fakeUSD: {
         address: chain.contracts.FakeUSDAddress,
         abi: JSON.parse(fs.readFileSync("./abis/FakeUSD.sol/fakeUSD.json")).abi
@@ -61,91 +65,102 @@ for (const chain of activeChains) {
       }
     },
     functions: {
+      // Define function configurations here
+      // Add new functions or update existing ones as needed
       mint: 'fakeUSD',
       approve: 'fakeUSD',
-      deposit: 'pionerV1Compliance'
+      deposit: 'pionerV1Compliance',
+      initiateWithdraw: 'pionerV1Compliance',
+      withdraw: 'pionerV1Compliance',
+      warperOpenQuoteMM: 'pionerV1Warper',
+      warperCloseLimitMM: 'pionerV1Warper',
+      warpperUpdatePriceAndCloseMarket: 'pionerV1Warper',
+      warpperUpdatePriceAndDefault: 'pionerV1Warper',
+      warperOpenQuoteMM: 'pionerV1Warper'
     },
     events: {
-        pionerV1Compliance: {
-          DepositEvent: {
-            name: 'DepositEvent',
-            args: ['user', 'amount']
-          },
-          InitiateWithdrawEvent: {
-            name: 'InitiateWithdrawEvent',
-            args: ['user', 'amount']
-          },
-          WithdrawEvent: {
-            name: 'WithdrawEvent',
-            args: ['user', 'amount']
-          },
-          CancelWithdrawEvent: {
-            name: 'CancelWithdrawEvent',
-            args: ['user', 'amount']
-          }
+      // Define event configurations here
+      // Add new events or update existing ones as needed
+      pionerV1Compliance: {
+        DepositEvent: {
+          name: 'DepositEvent',
+          args: ['user', 'amount']
         },
-        pionerV1Open: {
-          openQuoteEvent: {
-            name: 'openQuoteEvent',
-            args: ['bContractId']
-          },
-          openQuoteSignedEvent: {
-            name: 'openQuoteSignedEvent',
-            args: ['bContractId', 'fillAPIEventId']
-          },
-          cancelSignedMessageOpenEvent: {
-            name: 'cancelSignedMessageOpenEvent',
-            args: ['sender', 'messageHash']
-          },
-          acceptQuoteEvent: {
-            name: 'acceptQuoteEvent',
-            args: ['bContractId']
-          },
-          cancelOpenQuoteEvent: {
-            name: 'cancelOpenQuoteEvent',
-            args: ['bContractId']
-          }
+        InitiateWithdrawEvent: {
+          name: 'InitiateWithdrawEvent',
+          args: ['user', 'amount']
         },
-        pionerV1Default: {
-          settledEvent: {
-            name: 'settledEvent',
-            args: ['bContractId']
-          },
-          liquidatedEvent: {
-            name: 'liquidatedEvent',
-            args: ['bContractId']
-          },
-          flashAuctionBuyBackEvent: {
-            name: 'flashAuctionBuyBackEvent',
-            args: ['bContractId']
-          }
+        WithdrawEvent: {
+          name: 'WithdrawEvent',
+          args: ['user', 'amount']
         },
-        pionerV1Close: {
-          openCloseQuoteEvent: {
-            name: 'openCloseQuoteEvent',
-            args: ['bCloseQuoteId']
-          },
-          acceptCloseQuoteEvent: {
-            name: 'acceptCloseQuoteEvent',
-            args: ['bCloseQuoteId']
-          },
-          expirateBContractEvent: {
-            name: 'expirateBContractEvent',
-            args: ['bContractId']
-          },
-          closeMarketEvent: {
-            name: 'closeMarketEvent',
-            args: ['bCloseQuoteId']
-          },
-          cancelOpenCloseQuoteContractEvent: {
-            name: 'cancelOpenCloseQuoteContractEvent',
-            args: ['bContractId']
-          },
-          cancelSignedMessageCloseEvent: {
-            name: 'cancelSignedMessageCloseEvent',
-            args: ['sender', 'messageHash']
-          }
+        CancelWithdrawEvent: {
+          name: 'CancelWithdrawEvent',
+          args: ['user', 'amount']
         }
+      },
+      pionerV1Open: {
+        openQuoteEvent: {
+          name: 'openQuoteEvent',
+          args: ['bContractId']
+        },
+        openQuoteSignedEvent: {
+          name: 'openQuoteSignedEvent',
+          args: ['bContractId', 'fillAPIEventId']
+        },
+        cancelSignedMessageOpenEvent: {
+          name: 'cancelSignedMessageOpenEvent',
+          args: ['sender', 'messageHash']
+        },
+        acceptQuoteEvent: {
+          name: 'acceptQuoteEvent',
+          args: ['bContractId']
+        },
+        cancelOpenQuoteEvent: {
+          name: 'cancelOpenQuoteEvent',
+          args: ['bContractId']
+        }
+      },
+      pionerV1Default: {
+        settledEvent: {
+          name: 'settledEvent',
+          args: ['bContractId']
+        },
+        liquidatedEvent: {
+          name: 'liquidatedEvent',
+          args: ['bContractId']
+        },
+        flashAuctionBuyBackEvent: {
+          name: 'flashAuctionBuyBackEvent',
+          args: ['bContractId']
+        }
+      },
+      pionerV1Close: {
+        openCloseQuoteEvent: {
+          name: 'openCloseQuoteEvent',
+          args: ['bCloseQuoteId']
+        },
+        acceptCloseQuoteEvent: {
+          name: 'acceptCloseQuoteEvent',
+          args: ['bCloseQuoteId']
+        },
+        expirateBContractEvent: {
+          name: 'expirateBContractEvent',
+          args: ['bContractId']
+        },
+        closeMarketEvent: {
+          name: 'closeMarketEvent',
+          args: ['bCloseQuoteId']
+        },
+        cancelOpenCloseQuoteContractEvent: {
+          name: 'cancelOpenCloseQuoteContractEvent',
+          args: ['bContractId']
+        },
+        cancelSignedMessageCloseEvent: {
+          name: 'cancelSignedMessageCloseEvent',
+          args: ['sender', 'messageHash']
+        }
+      }
     }
   };
 
@@ -177,51 +192,50 @@ for (const chain of activeChains) {
   configs[pionerChainId].signers = signers;
 }
 
-
 async function getEvents(pionerChainId, contractName, eventName, startBlock, endBlock) {
-    const config = configs[pionerChainId];
-    const contract = config.contracts[contractName].instance;
-    const eventConfig = config.events[contractName][eventName];
-  
-    const filter = contract.filters[eventName]();
-    const events = await contract.queryFilter(filter, startBlock, endBlock);
-  
-    const parsedEvents = events.map(event => {
-      const parsedArgs = {};
-      eventConfig.args.forEach((arg, index) => {
-        parsedArgs[arg] = event.args[index];
-      });
-      return {
-        ...event,
-        parsedArgs
-      };
+  const config = configs[pionerChainId];
+  const contract = config.contracts[contractName].instance;
+  const eventConfig = config.events[contractName][eventName];
+
+  const filter = contract.filters[eventName]();
+  const events = await contract.queryFilter(filter, startBlock, endBlock);
+
+  const parsedEvents = events.map(event => {
+    const parsedArgs = {};
+    eventConfig.args.forEach((arg, index) => {
+      parsedArgs[arg] = event.args[index];
     });
-  
-    return parsedEvents;
-  }
-  
-  async function getAllEvents(pionerChainIds, startBlock, endBlock) {
-    const allEvents = {};
-  
-    for (const pionerChainId of pionerChainIds) {
-      const config = configs[pionerChainId];
-      allEvents[pionerChainId] = {};
-  
-      for (const contractName in config.events) {
-        allEvents[pionerChainId][contractName] = {};
-  
-        for (const eventName in config.events[contractName]) {
-          const events = await getEvents(pionerChainId, contractName, eventName, startBlock, endBlock);
-          allEvents[pionerChainId][contractName][eventName] = events;
-        }
+    return {
+      ...event,
+      parsedArgs
+    };
+  });
+
+  return parsedEvents;
+}
+
+async function getAllEvents(pionerChainIds, startBlock, endBlock) {
+  const allEvents = {};
+
+  for (const pionerChainId of pionerChainIds) {
+    const config = configs[pionerChainId];
+    allEvents[pionerChainId] = {};
+
+    for (const contractName in config.events) {
+      allEvents[pionerChainId][contractName] = {};
+
+      for (const eventName in config.events[contractName]) {
+        const events = await getEvents(pionerChainId, contractName, eventName, startBlock, endBlock);
+        allEvents[pionerChainId][contractName][eventName] = events;
       }
     }
-  
-    return allEvents;
   }
-  
-  module.exports = {
-    configs,
-    getEvents,
-    getAllEvents
-  };
+
+  return allEvents;
+}
+
+module.exports = {
+  configs,
+  getEvents,
+  getAllEvents
+};
