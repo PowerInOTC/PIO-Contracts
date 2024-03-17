@@ -174,3 +174,9 @@ main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
+
+/*
+npx hardhat node
+npx hardhat run scripts/_deploy.js --network sonic
+npx hardhat run scripts/_deploy.js --network ftmTestnet
+*/
