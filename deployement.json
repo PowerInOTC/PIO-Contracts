@@ -45,7 +45,9 @@
     "PionerV1Default": "0x874547948f91477848f2C36d8B06f52aB7AEfD47",
     "PionerV1View": ", 0x5C718738486D8130b8BD628d27bc01A86EB17a8f",
     "PionerV1Oracle": "0xBA8c5eF77B76e8dA166eFE11415Aac91B969579B",
-    "PionerV1Wrapper": "0x271990c7a1BDD612EC4c60492b24Dc693af67198"}}]
+    "PionerV1Wrapper": "0x271990c7a1BDD612EC4c60492b24Dc693af67198"}},
+{"name":"Blast Testnet","chain":"ETH","icon":"blastIcon","rpc":["http://testnet-rpc.blastblockchain.com"],"faucets":[],"nativeCurrency":{"name":"Ether","symbol":"ETH","decimals":18},"infoURL":"https://docs.blastblockchain.com","shortName":"blastT","chainId":23888,"networkId":23888,"explorers":[{"name":"Blast Testnet","url":"http://testnet-explorer.blastblockchain.com","standard":"EIP3091"}]}
+]
 
 
 
