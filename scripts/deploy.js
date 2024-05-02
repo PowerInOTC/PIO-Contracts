@@ -1,7 +1,7 @@
 const hre = require("hardhat");
 
 const { ethers } = require("hardhat");
-
+const { sendMessage } = require("./telegram");
 
 async function main() {
   const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
@@ -19,8 +19,9 @@ async function main() {
     }
   }
 
-
-  const SchnorrSECP256K1VerifierV2 = await hre.ethers.getContractFactory("SchnorrSECP256K1VerifierV2");
+  const SchnorrSECP256K1VerifierV2 = await hre.ethers.getContractFactory(
+    "SchnorrSECP256K1VerifierV2"
+  );
   const schnorrSECP256K1VerifierV2 = await SchnorrSECP256K1VerifierV2.deploy();
   await schnorrSECP256K1VerifierV2.waitForDeployment();
 
@@ -40,17 +41,24 @@ async function main() {
   await fakeUSD.waitForDeployment();
 
   // Deploy PionerV1
-  const PionerV1 = await hre.ethers.getContractFactory("PionerV1", {libraries: {PionerV1Utils: pionerV1Utils.target,},});
+  const PionerV1 = await hre.ethers.getContractFactory("PionerV1", {
+    libraries: { PionerV1Utils: pionerV1Utils.target },
+  });
   const pionerV1 = await PionerV1.deploy();
   await pionerV1.waitForDeployment();
   // Deploy PionerV1Compliance
-  const PionerV1Compliance = await hre.ethers.getContractFactory("PionerV1Compliance");
+  const PionerV1Compliance = await hre.ethers.getContractFactory(
+    "PionerV1Compliance"
+  );
   const pionerV1Compliance = await PionerV1Compliance.deploy(pionerV1.target);
   await pionerV1Compliance.waitForDeployment();
   // Deploy PionerV1Open
   const PionerV1Open = await hre.ethers.getContractFactory("PionerV1Open");
 
-  const pionerV1Open = await PionerV1Open.deploy(pionerV1.target, pionerV1Compliance.target);
+  const pionerV1Open = await PionerV1Open.deploy(
+    pionerV1.target,
+    pionerV1Compliance.target
+  );
   await pionerV1Open.waitForDeployment();
 
   // Deploy PionerV1Close
@@ -59,47 +67,71 @@ async function main() {
       PionerV1Utils: pionerV1Utils.target,
     },
   });
-  const pionerV1Close = await PionerV1Close.deploy(pionerV1.target, pionerV1Compliance.target);
+  const pionerV1Close = await PionerV1Close.deploy(
+    pionerV1.target,
+    pionerV1Compliance.target
+  );
   await pionerV1Close.waitForDeployment();
 
   // Deploy PionerV1Default
-  const PionerV1Default = await hre.ethers.getContractFactory("PionerV1Default", {
-    libraries: {
-      PionerV1Utils: pionerV1Utils.target,
-    },
-  });
-  const pionerV1Default = await PionerV1Default.deploy(pionerV1.target, pionerV1Compliance.target);
+  const PionerV1Default = await hre.ethers.getContractFactory(
+    "PionerV1Default",
+    {
+      libraries: {
+        PionerV1Utils: pionerV1Utils.target,
+      },
+    }
+  );
+  const pionerV1Default = await PionerV1Default.deploy(
+    pionerV1.target,
+    pionerV1Compliance.target
+  );
   await pionerV1Default.waitForDeployment();
 
   // Deploy PionerV1View
   const PionerV1View = await hre.ethers.getContractFactory("PionerV1View");
-  const pionerV1View = await PionerV1View.deploy(pionerV1.target, pionerV1Compliance.target);
+  const pionerV1View = await PionerV1View.deploy(
+    pionerV1.target,
+    pionerV1Compliance.target
+  );
   await pionerV1View.waitForDeployment();
 
   // Deploy PionerV1Oracle
   const PionerV1Oracle = await hre.ethers.getContractFactory("PionerV1Oracle");
-  const pionerV1Oracle = await PionerV1Oracle.deploy(pionerV1.target, pionerV1Compliance.target);
+  const pionerV1Oracle = await PionerV1Oracle.deploy(
+    pionerV1.target,
+    pionerV1Compliance.target
+  );
   await pionerV1Oracle.waitForDeployment();
 
   // Deploy PionerV1Default
-  const PionerV1Wrapper = await hre.ethers.getContractFactory("PionerV1Wrapper");
-  const pionerV1Wrapper = await PionerV1Wrapper.deploy(pionerV1.target, pionerV1Compliance.target, pionerV1Open.target ,pionerV1Close.target ,pionerV1Default.target, pionerV1Oracle.target);
+  const PionerV1Wrapper = await hre.ethers.getContractFactory(
+    "PionerV1Wrapper"
+  );
+  const pionerV1Wrapper = await PionerV1Wrapper.deploy(
+    pionerV1.target,
+    pionerV1Compliance.target,
+    pionerV1Open.target,
+    pionerV1Close.target,
+    pionerV1Default.target,
+    pionerV1Oracle.target
+  );
   await pionerV1Wrapper.waitForDeployment();
 
-  _daiAddress = fakeUSD.target ;
-  _min_notional = ethers.parseUnits("25", 18) ;
-  _frontend_share = ethers.parseUnits("3", 17) ;
-  _affiliation_share = ethers.parseUnits("3", 17) ;
-  _hedger_share = ethers.parseUnits("5", 16) ;
-  _pioner_dao_share = ethers.parseUnits("4", 17) ;
-  _total_share = ethers.parseUnits("3", 17) ;
-  _default_auction_period = 30 ;
-  _cancel_time_buffer = 30 ;
-  _max_open_positions = 100 ;
-  _grace_period = 300 ; 
-  _pioner_dao = owner.address ;
-  _admin = owner.address ;
-/*
+  _daiAddress = fakeUSD.target;
+  _min_notional = ethers.parseUnits("25", 18);
+  _frontend_share = ethers.parseUnits("3", 17);
+  _affiliation_share = ethers.parseUnits("3", 17);
+  _hedger_share = ethers.parseUnits("5", 16);
+  _pioner_dao_share = ethers.parseUnits("4", 17);
+  _total_share = ethers.parseUnits("3", 17);
+  _default_auction_period = 30;
+  _cancel_time_buffer = 30;
+  _max_open_positions = 100;
+  _grace_period = 300;
+  _pioner_dao = owner.address;
+  _admin = owner.address;
+  /*
   await verifyContract(pionerV1Utils.target, []);
   await verifyContract(fakeUSD.target, []);
   await verifyContract(pionerV1.target, []);
@@ -114,10 +146,10 @@ async function main() {
 
   // Set contract addresses in PionerV1
   await pionerV1.setContactAddress(
-    _daiAddress ,
-    _min_notional ,
-    _frontend_share ,
-    _affiliation_share ,
+    _daiAddress,
+    _min_notional,
+    _frontend_share,
+    _affiliation_share,
     _hedger_share,
     _pioner_dao_share,
     _total_share,
@@ -131,13 +163,21 @@ async function main() {
     pionerV1Close.target,
     pionerV1Default.target,
     pionerV1Compliance.target,
-    pionerV1Oracle.target, 
+    pionerV1Oracle.target,
     pionerV1Wrapper.target
   );
 
-
-
   console.log(`"contracts": {"FakeUSD" : "${fakeUSD.target}",
+    "PionerV1": "${pionerV1.target}", 
+    "PionerV1Compliance": "${pionerV1Compliance.target}", 
+    "PionerV1Open": "${pionerV1Open.target}", 
+    "PionerV1Close": "${pionerV1Close.target}", 
+    "PionerV1Default": "${pionerV1Default.target}", 
+    "PionerV1View": ", ${pionerV1View.target}", 
+    "PionerV1Oracle": "${pionerV1Oracle.target}", 
+    "PionerV1Wrapper": "${pionerV1Wrapper.target}"}`);
+
+  sendMessage(`"contracts": {"FakeUSD" : "${fakeUSD.target}",
     "PionerV1": "${pionerV1.target}", 
     "PionerV1Compliance": "${pionerV1Compliance.target}", 
     "PionerV1Open": "${pionerV1Open.target}", 
