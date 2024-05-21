@@ -1,7 +1,7 @@
 const hre = require("hardhat");
 const { ethers } = require("hardhat");
 /*
-npx hardhat --network sonic run test.js
+npx hardhat --network sonic run ./scripts/test.js
 */
 
 const Web3 = require("web3");
@@ -72,7 +72,7 @@ async function main() {
     nonce: 0,
   };
 
-  const openQuoteSignature = await addr1.signTypedData(
+  const signatureOpenQuote = await addr1.signTypedData(
     domainOpen,
     openQuoteSignType,
     openQuoteSignValue
@@ -118,11 +118,11 @@ async function main() {
     expiryA: 60,
     expiryB: 60,
     timeLock: 1440 * 30 * 3,
-    signatureHashOpenQuote: openQuoteSignature,
+    signatureHashOpenQuote: signatureOpenQuote,
     nonce: 0,
   };
 
-  const signaturebOracleSign = await addr1.signTypedData(
+  const signatureBoracle = await addr1.signTypedData(
     domainWrapper,
     bOracleSignType,
     bOracleSignValue
@@ -130,13 +130,17 @@ async function main() {
 
   const _acceptPrice = ethers.parseUnits("50", 18);
 
+  console.log("signatureOpenQuote", ethers.hexlify(signatureOpenQuote));
+  console.log("signatureBoracle", ethers.hexlify(signatureBoracle));
+  console.log("addr1", addr1.address);
+  console.log("addr2", addr2.address);
   await pionerV1Wrapper
     .connect(addr2)
     .wrapperOpenQuoteMM(
       bOracleSignValue,
-      signaturebOracleSign,
+      signatureBoracle,
       openQuoteSignValue,
-      openQuoteSignature,
+      signatureOpenQuote,
       _acceptPrice
     );
 }

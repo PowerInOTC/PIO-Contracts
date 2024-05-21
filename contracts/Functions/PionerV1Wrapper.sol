@@ -27,6 +27,9 @@ contract PionerV1Wrapper is EIP712 {
     PionerV1Default private settle;
     PionerV1Oracle private oracle;
 
+        event acceptQuoteEvent(bytes indexed signatureHashOpenQuote);
+
+
     constructor (
             address pionerV1Address
             , address pionerV1ComplianceAddress
@@ -117,6 +120,7 @@ contract PionerV1Wrapper is EIP712 {
         }
     }
     
+
     /// @dev This function is used by hedging bots to open a quote and deploy a Pion Oracle
     function wrapperOpenQuoteMM(
         utils.bOracleSign calldata bOracleSign,
@@ -156,6 +160,8 @@ contract PionerV1Wrapper is EIP712 {
         );
         open.openQuoteSigned(openQuoteSign, openQuoteSignature, signer, pio.getBOracleLength() - 1, msg.sender);
         open.acceptQuotewrapper(pio.getBContractLength() - 1, _acceptPrice, msg.sender);
+        emit acceptQuoteEvent(bOracleSign.signatureHashOpenQuote);
+
     }
 
 /*
@@ -198,7 +204,4 @@ contract PionerV1Wrapper is EIP712 {
         open.acceptQuoteSigned(acceptQuoteSign, signHash);
     }
     */
-
-
-    
 }

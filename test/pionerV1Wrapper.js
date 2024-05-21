@@ -1,14 +1,24 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { convertToBytes32 } = require("./utils/utils.js");
 
 const Web3 = require("web3");
 
-function convertToBytes32(str) {
-  const hex = Web3.utils.toHex(str);
-  return Web3.utils.padRight(hex, 64);
+function reverseConvertToBytes32(hexStr) {
+  const hex = Web3.utils.padLeft(hexStr, 64);
+  const str = Web3.utils.hexToUtf8(hex);
+  return str;
 }
 
+function reverseConvertToBytes32bis(hexStr) {
+  const hex = Web3.utils.padLeft(hexStr, 64);
+  const str = Web3.utils.hexToUtf8(hex);
+  return str.replace(/\0+$/, "");
+}
+
+/*
+0x666f7265782e4555525553440000000000000000000000000000000000000000
+0x666f7265782e4555525553442f666f7265782e47425055534400000000000000
+*/
 describe("PionerV1Close Signatures Contract", function () {
   let FakeUSD, fakeUSD, PionerV1, pionerV1;
   let owner, addr1, addr2, addr3, balances, owed1, owed2;
@@ -70,6 +80,12 @@ describe("PionerV1Close Signatures Contract", function () {
       pionerV1.target,
       pionerV1Compliance.target
     );
+    PionerV1View = await ethers.getContractFactory("PionerV1View");
+    pionerV1View = await PionerV1View.deploy(
+      pionerV1.target,
+      pionerV1Compliance.target
+    );
+
     PionerV1Oracle = await ethers.getContractFactory("PionerV1Oracle");
     pionerV1Oracle = await PionerV1Oracle.deploy(
       pionerV1.target,
@@ -130,6 +146,10 @@ describe("PionerV1Close Signatures Contract", function () {
     _parity = 0;
     _maxConfidence = ethers.parseUnits("1", 18);
     _assetHex = convertToBytes32("forex.EURUSD/forex.GBPUSD");
+    console.log("assetHex : ", _assetHex);
+    const reverse = reverseConvertToBytes32(_assetHex);
+    const reversebis = reverseConvertToBytes32bis(_assetHexbis);
+    console.log("reverse : ", reverse);
     _maxDelay = 60000;
     _precision = 5;
     _imA = ethers.parseUnits("10", 16);
@@ -157,6 +177,9 @@ describe("PionerV1Close Signatures Contract", function () {
       _timeLock,
       _cType
     );
+
+    const oraclePrint = await pionerV1View.getOracle(0);
+    console.log("oraclePrint : ", oraclePrint);
 
     const oracleLength = await pionerV1.getBOracleLength();
 
@@ -263,7 +286,6 @@ describe("PionerV1Close Signatures Contract", function () {
         { name: "nonce", type: "uint256" },
       ],
     };
-
     const bOracleSignValue = {
       x: "0x20568a84796e6ade0446adfd2d8c4bba2c798c2af0e8375cc3b734f71b17f5fd",
       parity: 0,
@@ -358,3 +380,8 @@ describe("PionerV1Close Signatures Contract", function () {
     );
   });
 });
+
+/*
+npx hardhat node
+npx hardhat run test/pionerV1Wrapper.js 
+*/

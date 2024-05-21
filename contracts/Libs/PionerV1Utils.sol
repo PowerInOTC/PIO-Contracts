@@ -20,6 +20,10 @@ library PionerV1Utils {
         address nonce;
     }
 
+
+
+
+
     struct bContract { 
         address pA; 
         address pB; 
@@ -67,6 +71,10 @@ library PionerV1Utils {
         uint256 openTime; 
         uint256 state;
     } 
+
+
+  
+
 
     struct bOracle{
         bytes32 assetHex;

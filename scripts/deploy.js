@@ -217,6 +217,6 @@ main().catch((error) => {
 
 /*
 npx hardhat node
-npx hardhat run scripts/_deploy.js --network sonic
+npx hardhat run scripts/deploy.js --network sonic
 npx hardhat run scripts/_deploy.js --network ftmTestnet
 */
