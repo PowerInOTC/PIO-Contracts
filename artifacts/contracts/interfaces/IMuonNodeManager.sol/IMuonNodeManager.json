@@ -1,0 +1,141 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IMuonNodeManager",
+  "sourceName": "contracts/interfaces/IMuonNodeManager.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_nodeAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_stakerAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "_peerId",
+          "type": "string"
+        },
+        {
+          "internalType": "bool",
+          "name": "_active",
+          "type": "bool"
+        }
+      ],
+      "name": "addNode",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "nodeId",
+          "type": "uint64"
+        }
+      ],
+      "name": "deactiveNode",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "nodeId",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint8",
+          "name": "tier",
+          "type": "uint8"
+        }
+      ],
+      "name": "setTier",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_addr",
+          "type": "address"
+        }
+      ],
+      "name": "stakerAddressInfo",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint64",
+              "name": "id",
+              "type": "uint64"
+            },
+            {
+              "internalType": "address",
+              "name": "nodeAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "stakerAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "string",
+              "name": "peerId",
+              "type": "string"
+            },
+            {
+              "internalType": "bool",
+              "name": "active",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint8",
+              "name": "tier",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint64[]",
+              "name": "roles",
+              "type": "uint64[]"
+            },
+            {
+              "internalType": "uint256",
+              "name": "startTime",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "endTime",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lastEditTime",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct IMuonNodeManager.Node",
+          "name": "node",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

@@ -27,7 +27,8 @@ contract PionerV1Wrapper is EIP712 {
     PionerV1Default private settle;
     PionerV1Oracle private oracle;
 
-        event acceptQuoteEvent(bytes indexed signatureHashOpenQuote);
+    event acceptQuoteEvent(bytes indexed signatureHashOpenQuote, uint256 indexed bContractId);
+    event acceptCloseQuoteEvent(bytes indexed signatureHashCloseQuote, uint256 indexed bContractId);
 
 
     constructor (
@@ -46,78 +47,22 @@ contract PionerV1Wrapper is EIP712 {
         oracle = PionerV1Oracle(pionerV1OracleAddress);
     }
 
-    function wrapperUpdatePriceAndDefault( utils.pionSign memory priceSignature,uint256 bOracleId,uint256 bContractId ) public {
-        oracle.updatePricePion(priceSignature, bOracleId );
+    function wrapperUpdatePriceAndDefault( utils.pionSign memory priceSignature,uint256 bContractId ) public {
+                utils.bContract memory bC = pio.getBContract(bContractId);
+        oracle.updatePricePion(priceSignature, bC.oracleId);
+
         settle.settleAndLiquidate( bContractId);
     }
 
-    function wrapperUpdatePriceAndCloseMarket( utils.pionSign memory priceSignature,uint256 bOracleId,uint256 bCloseQuoteId,uint256 index ) public {
+    function wrapperUpdatePriceAndCloseMarket( utils.pionSign memory priceSignature,uint256 bOracleId,uint256 bCloseQuoteId ) public {
         oracle.updatePricePion( priceSignature, bOracleId );
-        close.closeMarket(bCloseQuoteId, index);
+        close.closeMarket(bCloseQuoteId);
     }
 
     function wrapperCloseLimitMM( utils.OpenCloseQuoteSign calldata quote, bytes calldata signHash ) public {
         close.openCloseQuoteSigned( quote, signHash, msg.sender ); 
-        close.acceptCloseQuotewrapper(pio.getBCloseQuoteLength() - 1, 0 , quote.amount, msg.sender );
-    }
-    
-
-    function wrapperOpenTPSLOracleSwap(
-        bool isLong,
-        uint256 price,
-        uint256 amount,
-        uint256 interestRate, 
-        bool isAPayingAPR, 
-        address frontEnd, 
-        address affiliate,
-        bytes32 _assetHex,
-        uint256 _x,
-        uint8 _parity,
-        uint256 _maxConfidence,
-        uint256 _maxDelay,
-        uint256 precision,
-        uint256 _imA,
-        uint256 _imB,
-        uint256 _dfA,
-        uint256 _dfB,
-        uint256 _expiryA,
-        uint256 _expiryB,
-        uint256 _timeLock,
-        uint256[] memory bContractIdsTP,
-        uint256[] memory priceTP, 
-        uint256[] memory amountTP, 
-        uint256[] memory limitOrStopTP, 
-        uint256[] memory expiryTP,
-        uint256[] memory bContractIdsSL,
-        uint256[] memory priceSL, 
-        uint256[] memory amountSL, 
-        uint256[] memory limitOrStopSL, 
-        uint256[] memory expirySL
-        ) public {
-
-        oracle.deployBOraclePion( 
-            _x,
-            _parity,
-            _maxConfidence,
-            _assetHex,
-            _maxDelay,
-            precision,
-            _imA,
-            _imB,
-            _dfA,
-            _dfB,
-            _expiryA,
-            _expiryB,
-            _timeLock,
-            1
-            );
-        open.openQuote(isLong, pio.getBOracleLength() - 1, price, amount, interestRate, isAPayingAPR, frontEnd, affiliate);
-        if (bContractIdsTP.length > 0 ) {
-            close.openCloseQuote(bContractIdsTP, priceTP, amountTP, limitOrStopTP, expiryTP);
-        }
-        if (bContractIdsSL.length > 0 ) {
-            close.openCloseQuote(bContractIdsSL, priceSL, amountSL, limitOrStopSL, expirySL);
-        }
+        close.acceptCloseQuotewrapper(pio.getBCloseQuoteLength() - 1, quote.amount, msg.sender );
+       emit  acceptCloseQuoteEvent(signHash, quote.bContractId);
     }
     
 
@@ -160,7 +105,7 @@ contract PionerV1Wrapper is EIP712 {
         );
         open.openQuoteSigned(openQuoteSign, openQuoteSignature, signer, pio.getBOracleLength() - 1, msg.sender);
         open.acceptQuotewrapper(pio.getBContractLength() - 1, _acceptPrice, msg.sender);
-        emit acceptQuoteEvent(bOracleSign.signatureHashOpenQuote);
+        emit acceptQuoteEvent(bOracleSign.signatureHashOpenQuote, pio.getBContractLength() - 1 );
 
     }
 

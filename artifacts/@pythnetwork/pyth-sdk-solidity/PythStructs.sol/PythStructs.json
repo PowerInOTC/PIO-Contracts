@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "PythStructs",
+  "sourceName": "@pythnetwork/pyth-sdk-solidity/PythStructs.sol",
+  "abi": [],
+  "bytecode": "0x60808060405234601357603a908160198239f35b600080fdfe600080fdfea26469706673582212205f7431bce85b6ae25d35d4d9b4c291568a11e512aba2995102809c511d2e765864736f6c63430008140033",
+  "deployedBytecode": "0x600080fdfea26469706673582212205f7431bce85b6ae25d35d4d9b4c291568a11e512aba2995102809c511d2e765864736f6c63430008140033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

@@ -1,5 +1,7 @@
 # PionerV1 Testnet Contracts
 
+( Warning these Contract do not cover best practices and old. We're working on a reword, this won't affect the rest of offchain circuits)
+
 Contract addresses and Chains :
 ./deployement.json
 
@@ -10,6 +12,3 @@ RPC and Private Keys :
 ./.env.example
 
 Deploy :
-```
-npx hardhat run scripts/deploy.js --network [netowrk]
-```

@@ -73,113 +73,68 @@ contract PionerV1Close is EIP712 {
         require(wrapperSigner == quote.authorized || quote.authorized == address(0), "Invalid signature or unauthorized");
         require(quote.amount != 0 && quote.price != 0, "Invalid parameters");
 
-        uint256[] memory bContractIds = new uint256[](1);
-        bContractIds[0] = quote.bContractId;
-        uint256[] memory prices = new uint256[](1);
-        prices[0] = quote.price;
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = quote.amount;
-        uint256[] memory limitOrStops = new uint256[](1);
-        limitOrStops[0] = quote.limitOrStop;
-        uint256[] memory expiries = new uint256[](1);
-        expiries[0] = quote.expiry;
+
         utils.bCloseQuote memory newQuote = utils.bCloseQuote(
-            bContractIds,
-            prices,
-            amounts,
-            limitOrStops,
-            expiries,
+            quote.bContractId,
+            quote.price,
+            quote.amount,
+            quote.limitOrStop,
+            quote.expiry,
             signer,
             0, 
             block.timestamp,
             1  
-        );
+        );  
         pio.setBCloseQuote(pio.getBCloseQuoteLength(), newQuote);
         pio.addBCloseQuoteLength();
         emit openCloseQuoteEvent(pio.getBCloseQuoteLength() - 1);
     }
 
-    function openCloseQuote(
-        uint256[] memory bContractIds,
-        uint256[] memory price, 
-        uint256[] memory amount, 
-        uint256[] memory limitOrStop, 
-        uint256[] memory expiry
-    ) public {
 
-        require(
-            bContractIds.length == price.length && 
-            price.length == amount.length && 
-            amount.length == limitOrStop.length &&
-            amount.length == expiry.length,
-            "Close11"
-        );
-        for (uint256 i = 0; i < amount.length; i++) {
-            require(amount[i] != 0, "Close12");
-            require(price[i] != 0, "Close13");
-        }
-
-        utils.bCloseQuote memory newQuote = utils.bCloseQuote(
-            bContractIds,
-            price,
-            amount,
-            limitOrStop,
-            expiry,
-            msg.sender,
-            0,                 
-            block.timestamp,
-            1
-        );
-        pio.setBCloseQuote(pio.getBCloseQuoteLength(), newQuote);
-        pio.addBCloseQuoteLength();
-        emit openCloseQuoteEvent(pio.getBCloseQuoteLength() - 1 );
-    }
-
-     function acceptCloseQuote( uint256 bCloseQuoteId, uint256 index, uint256 amount ) public{
-        acceptCloseQuoteCore( bCloseQuoteId, index, amount, msg.sender );
+     function acceptCloseQuote( uint256 bCloseQuoteId,  uint256 amount ) public{
+        acceptCloseQuoteCore( bCloseQuoteId, amount, msg.sender );
      }
 
 
-    function acceptCloseQuotewrapper( uint256 bCloseQuoteId, uint256 index, uint256 amount, address target ) public{
+    function acceptCloseQuotewrapper( uint256 bCloseQuoteId,  uint256 amount, address target ) public{
         require( msg.sender == pio.getPIONERV1WRAPPERADDRESS(), "Not wrapper" );
-        acceptCloseQuoteCore( bCloseQuoteId, index, amount, target );
+        acceptCloseQuoteCore( bCloseQuoteId, amount, target );
      }
     
-    function acceptCloseQuoteCore( uint256 bCloseQuoteId, uint256 index, uint256 amount, address target ) internal {
+    function acceptCloseQuoteCore( uint256 bCloseQuoteId,  uint256 amount, address target ) internal {
         utils.bCloseQuote memory _bCloseQuote = pio.getBCloseQuote(bCloseQuoteId);
-        utils.bContract memory bC = pio.getBContract(_bCloseQuote.bContractIds[0]);
+        utils.bContract memory bC = pio.getBContract(_bCloseQuote.bContractId);
         utils.bOracle memory bO = pio.getBOracle(bC.oracleId);
-        require(index < _bCloseQuote.bContractIds.length, "Close21");
-        require( (_bCloseQuote.state == 1 && _bCloseQuote.expiry[index] > block.timestamp ) 
+        require( (_bCloseQuote.state == 1 && _bCloseQuote.expiry> block.timestamp ) 
         || ( _bCloseQuote.state == 1 && ( _bCloseQuote.cancelTime + pio.getCancelTimeBuffer() ) > block.timestamp), "Close23");
         if ( amount > bC.amount){
           amount = bC.amount;
+          
          }
-        (uint256 uPnl, bool isNegative) = utils.calculateuPnl( bC.price, _bCloseQuote.price[index], amount, bC.interestRate, bC.openTime , bC.isAPayingAPR);
+        (uint256 uPnl, bool isNegative) = utils.calculateuPnl( bC.price, _bCloseQuote.price, amount, bC.interestRate, bC.openTime , bC.isAPayingAPR);
 
         if (_bCloseQuote.initiator == bC.pA ) { 
             require( target == bC.pB, "Close24");
-            if (_bCloseQuote.limitOrStop[index] >0){  // stop limit
-                require(bO.lastPrice >= _bCloseQuote.limitOrStop[index], "Close25" );
+            if (_bCloseQuote.limitOrStop>0){  // stop limit
+                require(bO.lastPrice >= _bCloseQuote.limitOrStop, "Close25" );
             }
             else { // limit
-                //require( bO.lastPrice <= _bCloseQuote.price[index], "Close26");
+                //require( bO.lastPrice <= _bCloseQuote.price, "Close26");
             }
         } else if ( _bCloseQuote.initiator == bC.pB ){
             require( target == bC.pA, "Close27");
-            if (_bCloseQuote.limitOrStop[index] >0){
-                require(bO.lastPrice <= _bCloseQuote.limitOrStop[index], "Close28" );
+            if (_bCloseQuote.limitOrStop>0){
+                require(bO.lastPrice <= _bCloseQuote.limitOrStop, "Close28" );
             }
             else {
-                //require( bO.lastPrice >= _bCloseQuote.price[index], "Close29");
+                //require( bO.lastPrice >= _bCloseQuote.price, "Close29");
             }
         }
-        require( amount <= bC.amount + pio.getMinNotional(), "Close210");
-        require( amount >= pio.getMinNotional() / bC.amount / 1e18, "Close211");
-        closePosition(bC, bO, _bCloseQuote.bContractIds[index], uPnl, isNegative, amount, _bCloseQuote.price[index]);
-        _bCloseQuote.amount[index] -= amount;
+        closePosition(bC, bO, _bCloseQuote.bContractId, uPnl, isNegative, amount, _bCloseQuote.price);
+        require( _bCloseQuote.amount >= amount, "Close212");
+        _bCloseQuote.amount-= amount;
         pio.setBCloseQuote(bCloseQuoteId, _bCloseQuote);
-        pio.updateCumIm(bO, bC, _bCloseQuote.bContractIds[index]);
+        pio.updateCumIm(bO, bC, _bCloseQuote.bContractId);
 
         emit acceptCloseQuoteEvent( bCloseQuoteId);
     }    
@@ -189,50 +144,48 @@ contract PionerV1Close is EIP712 {
     function closeMarketSign(utils.CloseQuoteSign calldata closeQuote, bytes calldata signature) public {
         bytes32 structHash = keccak256(abi.encode(
             closeQuote.bCloseQuoteId,
-            closeQuote.index,
             closeQuote.nonce
         ));
 
         bytes32 hash = _hashTypedDataV4(structHash);
         address signer = ECDSA.recover(hash, signature);
-        closeMarketCore( closeQuote.bCloseQuoteId, closeQuote.index, signer);
+        closeMarketCore( closeQuote.bCloseQuoteId, signer);
     }
 
-    function closeMarket(uint256 bCloseQuoteId, uint256 index) public {
-        closeMarketCore( bCloseQuoteId, index, msg.sender);
+    function closeMarket(uint256 bCloseQuoteId) public {
+        closeMarketCore( bCloseQuoteId, msg.sender);
     }
     
-    function closeMarketCore(uint256 bCloseQuoteId, uint256 index, address target) internal {
+    function closeMarketCore(uint256 bCloseQuoteId, address target) internal {
         utils.bCloseQuote memory _bCloseQuote = pio.getBCloseQuote(bCloseQuoteId);
-        utils.bContract memory bC = pio.getBContract(_bCloseQuote.bContractIds[index]);
+        utils.bContract memory bC = pio.getBContract(_bCloseQuote.bContractId);
         utils.bOracle memory bO = pio.getBOracle(bC.oracleId);
         require(bO.forceCloseType == 1, "close30" );
-        require(index < _bCloseQuote.bContractIds.length, "Close31");
-        require( _bCloseQuote.amount[index] <= bC.amount + pio.getMinNotional(), "Close32");
-        require( _bCloseQuote.amount[index] * bO.lastPrice / 1e18 >= pio.getMinNotional(), "Close33");
+        require( _bCloseQuote.amount<= bC.amount + pio.getMinNotional(), "Close32");
+        require( _bCloseQuote.amount* bO.lastPrice / 1e18 >= pio.getMinNotional(), "Close33");
         require(bC.state == 2, "Close34");
-        require(_bCloseQuote.expiry[index] >= block.timestamp, "Close34a");
+        require(_bCloseQuote.expiry>= block.timestamp, "Close34a");
         require( bO.lastPriceUpdateTime <= bO.maxDelay + block.timestamp, "Close34c" );
         require( block.timestamp - bC.openTime > bO.maxDelay, "Close35"); 
         require( _bCloseQuote.initiator == target, "Close36");
-        require( _bCloseQuote.limitOrStop[index] == 1, "Close37");
+        require( _bCloseQuote.limitOrStop== 1, "Close37");
         require(_bCloseQuote.openTime + pio.getCancelTimeBuffer() <= block.timestamp, "Close38");
         uint256 bidAsk;
         if(target == bC.pA ){ bidAsk = bO.lastAsk; } else { bidAsk = bO.lastBid;}
 
-        (uint256 uPnl, bool isNegative) = utils.calculateuPnl( bC.price, _bCloseQuote.price[index], bC.amount, bC.interestRate, bC.openTime, bC.isAPayingAPR );
+        (uint256 uPnl, bool isNegative) = utils.calculateuPnl( bC.price, _bCloseQuote.price, bC.amount, bC.interestRate, bC.openTime, bC.isAPayingAPR );
     
         if (target == bC.pA){
-            require( _bCloseQuote.price[index] <= bidAsk, "Close310");
+            require( _bCloseQuote.price<= bidAsk, "Close310");
         }
         else{
             require(target == bC.pB, "Close311");
-            require( _bCloseQuote.price[index] >= bidAsk, "Close312");
+            require( _bCloseQuote.price>= bidAsk, "Close312");
         }
-        closePosition(bC, bO, _bCloseQuote.bContractIds[index], uPnl, isNegative, _bCloseQuote.amount[index], _bCloseQuote.price[index]);
-        _bCloseQuote.amount[index] = 0;
+        closePosition(bC, bO, _bCloseQuote.bContractId, uPnl, isNegative, _bCloseQuote.amount, _bCloseQuote.price);
+        _bCloseQuote.amount= 0;
         pio.setBCloseQuote(bCloseQuoteId, _bCloseQuote);
-        pio.updateCumIm(bO, bC, _bCloseQuote.bContractIds[index]);
+        pio.updateCumIm(bO, bC, _bCloseQuote.bContractId);
         emit closeMarketEvent(bCloseQuoteId);
   }
 

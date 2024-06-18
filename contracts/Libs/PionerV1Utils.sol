@@ -61,16 +61,16 @@ library PionerV1Utils {
     }
 
     struct bCloseQuote { 
-        uint256[] bContractIds;
-        uint256[] price;
-        uint256[] amount;
-        uint256[] limitOrStop; 
-        uint256[] expiry;
+        uint256 bContractId;
+        uint256 price;
+        uint256 amount;
+        uint256 limitOrStop; 
+        uint256 expiry;
         address initiator; 
         uint256 cancelTime;
         uint256 openTime; 
         uint256 state;
-    } 
+}
 
 
   
@@ -179,9 +179,11 @@ library PionerV1Utils {
 
     function calculateuPnl(uint256 price, uint256 lastPrice, uint256 amount, uint256 interestRate, uint256 lastPriceUpdateTime, bool isPayingIr) public view returns (uint256, bool) {
         uint256 ir = calculateIr(interestRate, (block.timestamp - lastPriceUpdateTime), lastPrice, amount);
+
         uint256 pnl;
         if (lastPrice >= price) {
             pnl = ((lastPrice - price) * amount) / 1e18;
+
             if (isPayingIr) {
                 if (pnl >= ir) {
                     return (pnl - ir, false);
@@ -193,6 +195,7 @@ library PionerV1Utils {
             }
         } else {
             pnl = ((price - lastPrice) * amount) / 1e18;
+
             if (isPayingIr) {
                 return (pnl - ir, true);
             } else {

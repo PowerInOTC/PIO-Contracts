@@ -119,7 +119,7 @@ async function main() {
   await pionerV1Wrapper.waitForDeployment();
 
   _daiAddress = fakeUSD.target;
-  _min_notional = ethers.parseUnits("25", 18);
+  _min_notional = ethers.parseUnits("25", 10);
   _frontend_share = ethers.parseUnits("3", 17);
   _affiliation_share = ethers.parseUnits("3", 17);
   _hedger_share = ethers.parseUnits("5", 16);
@@ -127,7 +127,7 @@ async function main() {
   _total_share = ethers.parseUnits("3", 17);
   _default_auction_period = 30;
   _cancel_time_buffer = 30;
-  _max_open_positions = 100;
+  _max_open_positions = 100000;
   _grace_period = 300;
   _pioner_dao = owner.address;
   _admin = owner.address;
@@ -177,15 +177,17 @@ async function main() {
     "PionerV1Oracle": "${pionerV1Oracle.target}", 
     "PionerV1Wrapper": "${pionerV1Wrapper.target}"}`);
 
-  sendMessage(`"contracts": {"FakeUSD" : "${fakeUSD.target}",
-    "PionerV1": "${pionerV1.target}", 
-    "PionerV1Compliance": "${pionerV1Compliance.target}", 
-    "PionerV1Open": "${pionerV1Open.target}", 
-    "PionerV1Close": "${pionerV1Close.target}", 
-    "PionerV1Default": "${pionerV1Default.target}", 
-    "PionerV1View": ", ${pionerV1View.target}", 
-    "PionerV1Oracle": "${pionerV1Oracle.target}", 
-    "PionerV1Wrapper": "${pionerV1Wrapper.target}"}`);
+  sendMessage(`contracts: {
+    FakeUSD : '${fakeUSD.target}',
+    PionerV1: '${pionerV1.target}', 
+    PionerV1Compliance: '${pionerV1Compliance.target}', 
+    PionerV1Open: '${pionerV1Open.target}', 
+    PionerV1Close: '${pionerV1Close.target}', 
+    PionerV1Default: '${pionerV1Default.target}', 
+    PionerV1View: ', ${pionerV1View.target}', 
+    PionerV1Oracle: '${pionerV1Oracle.target}', 
+    PionerV1Wrapper: '${pionerV1Wrapper.target}'
+  }`);
 
   /*
   // Mint FakeUSD tokens to addr1, addr2, and addr3
@@ -216,7 +218,7 @@ main().catch((error) => {
 });
 
 /*
-npx hardhat node
+cd .\PionerV1\   
 npx hardhat run scripts/deploy.js --network sonic
 npx hardhat run scripts/_deploy.js --network ftmTestnet
 */

@@ -1,25 +1,12 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-
 const Web3 = require("web3");
+const {
+  reverseConvertToBytes32,
+  convertToBytes32,
+} = require("./utils/utils.js");
 
-function reverseConvertToBytes32(hexStr) {
-  const hex = Web3.utils.padLeft(hexStr, 64);
-  const str = Web3.utils.hexToUtf8(hex);
-  return str;
-}
-
-function reverseConvertToBytes32bis(hexStr) {
-  const hex = Web3.utils.padLeft(hexStr, 64);
-  const str = Web3.utils.hexToUtf8(hex);
-  return str.replace(/\0+$/, "");
-}
-
-/*
-0x666f7265782e4555525553440000000000000000000000000000000000000000
-0x666f7265782e4555525553442f666f7265782e47425055534400000000000000
-*/
-describe("PionerV1Close Signatures Contract", function () {
+describe("PionerV1Wrappers Signatures Contract", function () {
   let FakeUSD, fakeUSD, PionerV1, pionerV1;
   let owner, addr1, addr2, addr3, balances, owed1, owed2;
 
@@ -49,8 +36,8 @@ describe("PionerV1Close Signatures Contract", function () {
     _cancel_time_buffer = 30;
     _max_open_positions = 100;
     _grace_period = 300;
-    _pioner_dao = owner.address;
-    _admin = owner.address;
+    _pioner_dao = addr3.address;
+    _admin = addr3.address;
 
     PionerV1 = await ethers.getContractFactory("PionerV1", {
       libraries: {
@@ -138,18 +125,12 @@ describe("PionerV1Close Signatures Contract", function () {
       .deposit(ethers.parseUnits("10000", 18), 1, addr2);
     await fakeUSD.connect(addr3).mint(mintAmount);
     await fakeUSD.connect(addr3).approve(pionerV1Compliance.target, mintAmount);
-    await pionerV1Compliance
-      .connect(addr3)
-      .deposit(ethers.parseUnits("10000", 18), 1, addr3);
 
     _x = "0x20568a84796e6ade0446adfd2d8c4bba2c798c2af0e8375cc3b734f71b17f5fd";
     _parity = 0;
     _maxConfidence = ethers.parseUnits("1", 18);
     _assetHex = convertToBytes32("forex.EURUSD/forex.GBPUSD");
-    console.log("assetHex : ", _assetHex);
-    const reverse = reverseConvertToBytes32(_assetHex);
-    const reversebis = reverseConvertToBytes32bis(_assetHexbis);
-    console.log("reverse : ", reverse);
+
     _maxDelay = 60000;
     _precision = 5;
     _imA = ethers.parseUnits("10", 16);
@@ -242,17 +223,18 @@ describe("PionerV1Close Signatures Contract", function () {
         { name: "nonce", type: "uint256" },
       ],
     };
+
     const openQuoteSignValue = {
-      isLong: true,
-      bOracleId: 0,
-      price: ethers.parseUnits("50", 18),
-      amount: ethers.parseUnits("10", 18),
-      interestRate: ethers.parseUnits("1", 17),
+      isLong: false,
+      bOracleId: "0",
+      price: ethers.parseUnits("11", 17),
+      amount: ethers.parseUnits("100", 18),
+      interestRate: ethers.parseUnits("4970", 16),
       isAPayingAPR: true,
-      frontEnd: owner.address,
-      affiliate: owner.address,
+      frontEnd: addr1.address,
+      affiliate: addr1.address,
       authorized: addr2.address,
-      nonce: 0,
+      nonce: 123,
     };
 
     const openQuoteSignature = await addr1.signTypedData(
@@ -290,18 +272,18 @@ describe("PionerV1Close Signatures Contract", function () {
       x: "0x20568a84796e6ade0446adfd2d8c4bba2c798c2af0e8375cc3b734f71b17f5fd",
       parity: 0,
       maxConfidence: ethers.parseUnits("1", 18),
-      assetHex: convertToBytes32("forex.EURUSD/forex.GBPUSD"),
+      assetHex: convertToBytes32("forex.EURUSD/forex.USDCHF"),
       maxDelay: 600,
       precision: 5,
       imA: ethers.parseUnits("10", 16),
       imB: ethers.parseUnits("10", 16),
       dfA: ethers.parseUnits("25", 15),
       dfB: ethers.parseUnits("25", 15),
-      expiryA: 60,
-      expiryB: 60,
-      timeLock: 1440 * 30 * 3,
+      expiryA: 129600,
+      expiryB: 129600,
+      timeLock: 129600,
       signatureHashOpenQuote: openQuoteSignature,
-      nonce: 0,
+      nonce: 123,
     };
 
     const signaturebOracleSign = await addr1.signTypedData(
@@ -349,12 +331,12 @@ describe("PionerV1Close Signatures Contract", function () {
 
     const openCloseQuoteValue = {
       bContractId: _bContractId,
-      price: ethers.parseUnits("55", 18),
-      amount: ethers.parseUnits("10", 18),
-      limitOrStop: 0,
-      expiry: 60000000000,
+      price: ethers.parseUnits("12", 17),
+      amount: ethers.parseUnits("100", 18),
+      limitOrStop: ethers.parseUnits("12", 17),
+      expiry: "60000000000",
       authorized: addr2.address,
-      nonce: 0,
+      nonce: 123,
     };
 
     const signCloseQuote = await addr1.signTypedData(
@@ -369,12 +351,17 @@ describe("PionerV1Close Signatures Contract", function () {
 
     const finalBalanceAddr1 = await pionerV1.getBalance(addr1);
     const finalBalanceAddr2 = await pionerV1.getBalance(addr2);
+    const finalBalanceAddr3 = await pionerV1.getBalance(addr3);
+    const finalBalanceAddrOwner = await pionerV1.getBalance(owner);
+
     const owedAmount1 = await pionerV1.getOwedAmount(addr1, addr2);
     const owedAmount2 = await pionerV1.getOwedAmount(addr2, addr1);
     console.log(
       "balances : ",
       BigInt(finalBalanceAddr1) / BigInt(1e18),
       BigInt(finalBalanceAddr2) / BigInt(1e18),
+      BigInt(finalBalanceAddr3) / BigInt(1e18),
+      BigInt(finalBalanceAddrOwner) / BigInt(1e18),
       BigInt(owedAmount1) / BigInt(1e18),
       BigInt(owedAmount2) / BigInt(1e18)
     );
@@ -382,6 +369,11 @@ describe("PionerV1Close Signatures Contract", function () {
 });
 
 /*
+ cd .\PionerV1\    
 npx hardhat node
-npx hardhat run test/pionerV1Wrapper.js 
+*/
+
+/*
+ cd .\PionerV1\    
+npx hardhat test test/pionerV1Wrapper.js 
 */

@@ -103,31 +103,6 @@ contract PionerV1View {
         );
     }
 
-    function getCloseQuote(uint256 closeQuoteId) public view returns (
-        uint256[] memory bContractIds,
-        uint256[] memory price,
-        uint256[] memory amount,
-        uint256[] memory limitOrStop,
-        uint256[] memory expiry,
-        address initiator,
-        uint256 cancelTime,
-        uint256 openTime,
-        uint256 state
-    ) {
-        utils.bCloseQuote memory closeQuote = pio.getBCloseQuote(closeQuoteId);
-        return (
-            closeQuote.bContractIds,
-            closeQuote.price,
-            closeQuote.amount,
-            closeQuote.limitOrStop,
-            closeQuote.expiry,
-            closeQuote.initiator,
-            closeQuote.cancelTime,
-            closeQuote.openTime,
-            closeQuote.state
-        );
-    }
-
     function getUserRelatedInfo(address user, address counterparty) public view returns (
         uint256 openPositionNumber,
         uint256 owedAmount,
