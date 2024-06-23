@@ -130,14 +130,16 @@ contract PionerV1Oracle {
         require(verified, "Invalid signature.");
 */
         require( 
-            bO.lastPriceUpdateTime < priceSignature.requestSignTime
-            && bO.oracleType == 4
-            && bO.assetHex == priceSignature.requestassetHex 
-            && priceSignature.requestSignTime + bO.maxDelay>= block.timestamp 
-            && priceSignature.requestConfidence <= bO.maxConfidence
-            //&& priceSignature.requestPrecision == bO.precision
-                , "wrong signature parameter" );
- 
+            bO.lastPriceUpdateTime < priceSignature.requestSignTime, "or10");
+        require( 
+            bO.oracleType == 4, "or11");
+        require( 
+            bO.assetHex == priceSignature.requestassetHex , "or12");
+        require( 
+            priceSignature.requestSignTime + bO.maxDelay>= block.timestamp, "or13");
+        require( 
+            priceSignature.requestConfidence <= bO.maxConfidence, "or14");
+
         bO.lastBid = priceSignature.requestPairBid;
         bO.lastAsk = priceSignature.requestPairAsk;
         bO.lastPrice = ( bO.lastBid + bO.lastAsk )/2 ;
@@ -171,7 +173,7 @@ contract PionerV1Oracle {
         utils.bOracle memory bO = pio.getBOracle(bOracleId);
         bO.lastPrice = price;
         bO.lastPriceUpdateTime = time;
-        require(bO.oracleType == 3, "not dummy");
+        require(bO.oracleType == 3, "or20");
         pio.setBOracle(bOracleId, bO);
     }
 

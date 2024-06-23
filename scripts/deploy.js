@@ -1,148 +1,102 @@
 const hre = require("hardhat");
-
 const { ethers } = require("hardhat");
 const { sendMessage } = require("./telegram");
 
+async function deployContract(
+  contractName,
+  deployer,
+  nonce,
+  args = [],
+  libraries = {}
+) {
+  const ContractFactory = await hre.ethers.getContractFactory(contractName, {
+    libraries,
+  });
+  const contract = await ContractFactory.connect(deployer).deploy(...args, {
+    nonce,
+  });
+  await contract.waitForDeployment();
+  console.log(`${contractName} deployed to:`, contract.target);
+  return contract;
+}
+
 async function main() {
   const [owner, addr1, addr2, addr3] = await hre.ethers.getSigners();
+  let nonce = await owner.getNonce();
 
-  async function verifyContract(address, constructorArguments) {
-    console.log(`Verifying contract at address ${address}...`);
-    try {
-      await hre.run("verify:verify", {
-        address: address,
-        constructorArguments: constructorArguments,
-      });
-      console.log(`Verified contract at ${address}`);
-    } catch (error) {
-      console.error(`Error verifying contract at ${address}:`, error);
-    }
-  }
-
-  const SchnorrSECP256K1VerifierV2 = await hre.ethers.getContractFactory(
-    "SchnorrSECP256K1VerifierV2"
+  const schnorrSECP256K1VerifierV2 = await deployContract(
+    "SchnorrSECP256K1VerifierV2",
+    owner,
+    nonce++
   );
-  const schnorrSECP256K1VerifierV2 = await SchnorrSECP256K1VerifierV2.deploy();
-  await schnorrSECP256K1VerifierV2.waitForDeployment();
+  const muonClientBase = await deployContract("MuonClientBase", owner, nonce++);
+  const pionerV1Utils = await deployContract("PionerV1Utils", owner, nonce++);
+  const fakeUSD = await deployContract("fakeUSD", owner, nonce++);
 
-  // Deploy MuonClientBase
-  const MuonClientBase = await hre.ethers.getContractFactory("MuonClientBase");
-  const muonClientBase = await MuonClientBase.deploy();
-  await muonClientBase.waitForDeployment();
-
-  // Deploy PionerV1Utils
-  const PionerV1Utils = await hre.ethers.getContractFactory("PionerV1Utils");
-  const pionerV1Utils = await PionerV1Utils.deploy();
-  await pionerV1Utils.waitForDeployment();
-
-  // Deploy FakeUSD
-  const FakeUSD = await hre.ethers.getContractFactory("fakeUSD");
-  const fakeUSD = await FakeUSD.deploy();
-  await fakeUSD.waitForDeployment();
-
-  // Deploy PionerV1
-  const PionerV1 = await hre.ethers.getContractFactory("PionerV1", {
-    libraries: { PionerV1Utils: pionerV1Utils.target },
+  const pionerV1 = await deployContract("PionerV1", owner, nonce++, [], {
+    PionerV1Utils: pionerV1Utils.target,
   });
-  const pionerV1 = await PionerV1.deploy();
-  await pionerV1.waitForDeployment();
-  // Deploy PionerV1Compliance
-  const PionerV1Compliance = await hre.ethers.getContractFactory(
-    "PionerV1Compliance"
+  const pionerV1Compliance = await deployContract(
+    "PionerV1Compliance",
+    owner,
+    nonce++,
+    [pionerV1.target]
   );
-  const pionerV1Compliance = await PionerV1Compliance.deploy(pionerV1.target);
-  await pionerV1Compliance.waitForDeployment();
-  // Deploy PionerV1Open
-  const PionerV1Open = await hre.ethers.getContractFactory("PionerV1Open");
-
-  const pionerV1Open = await PionerV1Open.deploy(
-    pionerV1.target,
-    pionerV1Compliance.target
-  );
-  await pionerV1Open.waitForDeployment();
-
-  // Deploy PionerV1Close
-  const PionerV1Close = await hre.ethers.getContractFactory("PionerV1Close", {
-    libraries: {
-      PionerV1Utils: pionerV1Utils.target,
-    },
-  });
-  const pionerV1Close = await PionerV1Close.deploy(
-    pionerV1.target,
-    pionerV1Compliance.target
-  );
-  await pionerV1Close.waitForDeployment();
-
-  // Deploy PionerV1Default
-  const PionerV1Default = await hre.ethers.getContractFactory(
-    "PionerV1Default",
-    {
-      libraries: {
-        PionerV1Utils: pionerV1Utils.target,
-      },
-    }
-  );
-  const pionerV1Default = await PionerV1Default.deploy(
-    pionerV1.target,
-    pionerV1Compliance.target
-  );
-  await pionerV1Default.waitForDeployment();
-
-  // Deploy PionerV1View
-  const PionerV1View = await hre.ethers.getContractFactory("PionerV1View");
-  const pionerV1View = await PionerV1View.deploy(
-    pionerV1.target,
-    pionerV1Compliance.target
-  );
-  await pionerV1View.waitForDeployment();
-
-  // Deploy PionerV1Oracle
-  const PionerV1Oracle = await hre.ethers.getContractFactory("PionerV1Oracle");
-  const pionerV1Oracle = await PionerV1Oracle.deploy(
-    pionerV1.target,
-    pionerV1Compliance.target
-  );
-  await pionerV1Oracle.waitForDeployment();
-
-  // Deploy PionerV1Default
-  const PionerV1Wrapper = await hre.ethers.getContractFactory(
-    "PionerV1Wrapper"
-  );
-  const pionerV1Wrapper = await PionerV1Wrapper.deploy(
+  const pionerV1Open = await deployContract("PionerV1Open", owner, nonce++, [
     pionerV1.target,
     pionerV1Compliance.target,
-    pionerV1Open.target,
-    pionerV1Close.target,
-    pionerV1Default.target,
-    pionerV1Oracle.target
+  ]);
+  const pionerV1Close = await deployContract(
+    "PionerV1Close",
+    owner,
+    nonce++,
+    [pionerV1.target, pionerV1Compliance.target],
+    { PionerV1Utils: pionerV1Utils.target }
   );
-  await pionerV1Wrapper.waitForDeployment();
+  const pionerV1Default = await deployContract(
+    "PionerV1Default",
+    owner,
+    nonce++,
+    [pionerV1.target, pionerV1Compliance.target],
+    { PionerV1Utils: pionerV1Utils.target }
+  );
+  const pionerV1View = await deployContract("PionerV1View", owner, nonce++, [
+    pionerV1.target,
+    pionerV1Compliance.target,
+  ]);
+  const pionerV1Oracle = await deployContract(
+    "PionerV1Oracle",
+    owner,
+    nonce++,
+    [pionerV1.target, pionerV1Compliance.target]
+  );
+  const pionerV1Wrapper = await deployContract(
+    "PionerV1Wrapper",
+    owner,
+    nonce++,
+    [
+      pionerV1.target,
+      pionerV1Compliance.target,
+      pionerV1Open.target,
+      pionerV1Close.target,
+      pionerV1Default.target,
+      pionerV1Oracle.target,
+    ]
+  );
 
-  _daiAddress = fakeUSD.target;
-  _min_notional = ethers.parseUnits("25", 10);
-  _frontend_share = ethers.parseUnits("3", 17);
-  _affiliation_share = ethers.parseUnits("3", 17);
-  _hedger_share = ethers.parseUnits("5", 16);
-  _pioner_dao_share = ethers.parseUnits("4", 17);
-  _total_share = ethers.parseUnits("3", 17);
-  _default_auction_period = 30;
-  _cancel_time_buffer = 30;
-  _max_open_positions = 100000;
-  _grace_period = 300;
-  _pioner_dao = owner.address;
-  _admin = owner.address;
-  /*
-  await verifyContract(pionerV1Utils.target, []);
-  await verifyContract(fakeUSD.target, []);
-  await verifyContract(pionerV1.target, []);
-  await verifyContract(pionerV1Compliance.target, [pionerV1.target]);
-  await verifyContract(pionerV1Open.target, [pionerV1.target, pionerV1Compliance.target]);
-  await verifyContract(pionerV1Close.target, [pionerV1.target, pionerV1Compliance.target]);
-  await verifyContract(pionerV1Default.target, [pionerV1.target, pionerV1Compliance.target]);
-  await verifyContract(pionerV1View.target, [pionerV1.target, pionerV1Compliance.target]);
-  await verifyContract(pionerV1Oracle.target, [pionerV1.target, pionerV1Compliance.target]);
-  await verifyContract(pionerV1Wrapper.target, [pionerV1.target, pionerV1Compliance.target, pionerV1Open.target ,pionerV1Close.target ,pionerV1Default.target, pionerV1Oracle.target]);
-*/
+  const _daiAddress = fakeUSD.target;
+  const _min_notional = ethers.parseUnits("25", 10);
+  const _frontend_share = ethers.parseUnits("3", 17);
+  const _affiliation_share = ethers.parseUnits("3", 17);
+  const _hedger_share = ethers.parseUnits("5", 16);
+  const _pioner_dao_share = ethers.parseUnits("4", 17);
+  const _total_share = ethers.parseUnits("3", 17);
+  const _default_auction_period = 30;
+  const _cancel_time_buffer = 30;
+  const _max_open_positions = 100000;
+  const _grace_period = 300;
+  const _pioner_dao = owner.address;
+  const _admin = owner.address;
 
   // Set contract addresses in PionerV1
   await pionerV1.setContactAddress(
@@ -164,8 +118,10 @@ async function main() {
     pionerV1Default.target,
     pionerV1Compliance.target,
     pionerV1Oracle.target,
-    pionerV1Wrapper.target
+    pionerV1Wrapper.target,
+    { nonce: nonce++ }
   );
+  console.log("PionerV1 contract addresses set");
 
   console.log(`"contracts": {"FakeUSD" : "${fakeUSD.target}",
     "PionerV1": "${pionerV1.target}", 
@@ -173,7 +129,7 @@ async function main() {
     "PionerV1Open": "${pionerV1Open.target}", 
     "PionerV1Close": "${pionerV1Close.target}", 
     "PionerV1Default": "${pionerV1Default.target}", 
-    "PionerV1View": ", ${pionerV1View.target}", 
+    "PionerV1View": "${pionerV1View.target}", 
     "PionerV1Oracle": "${pionerV1Oracle.target}", 
     "PionerV1Wrapper": "${pionerV1Wrapper.target}"}`);
 
@@ -184,41 +140,15 @@ async function main() {
     PionerV1Open: '${pionerV1Open.target}', 
     PionerV1Close: '${pionerV1Close.target}', 
     PionerV1Default: '${pionerV1Default.target}', 
-    PionerV1View: ', ${pionerV1View.target}', 
+    PionerV1View: '${pionerV1View.target}', 
     PionerV1Oracle: '${pionerV1Oracle.target}', 
     PionerV1Wrapper: '${pionerV1Wrapper.target}'
   }`);
 
-  /*
-  // Mint FakeUSD tokens to addr1, addr2, and addr3
-  await fakeUSD.mint(ethers.parseUnits("10000", 18));
-  await fakeUSD.mint(ethers.parseUnits("10000", 18));
-  await fakeUSD.mint(ethers.parseUnits("10000", 18));
-  await fakeUSD.mint(ethers.parseUnits("10000", 18));
-  console.log("FakeUSD minted to addresses");
-
-  // Approve and deposit FakeUSD to PionerV1Compliance for addr1, addr2, and addr3
-  await fakeUSD.connect(addr1).approve(pionerV1Compliance.target, ethers.parseUnits("10000", 18));
-  await fakeUSD.connect(addr2).approve(pionerV1Compliance.target, ethers.parseUnits("10000", 18));
-  await fakeUSD.connect(addr3).approve(pionerV1Compliance.target, ethers.parseUnits("10000", 18));
-  await fakeUSD.connect(owner).approve(pionerV1Compliance.target, ethers.parseUnits("10000", 18));
-
-  await pionerV1Compliance.connect(addr1).deposit(ethers.parseUnits("10000", 18), 1, addr1);
-  await pionerV1Compliance.connect(addr2).deposit(ethers.parseUnits("10000", 18), 1, addr2);
-  await pionerV1Compliance.connect(addr3).deposit(ethers.parseUnits("10000", 18), 1, addr3);
-  await pionerV1Compliance.connect(owner).deposit(ethers.parseUnits("10000", 18), 1, owner);
-*/
-
-  console.log("Deployement completed !");
+  console.log("Deployment completed!");
 }
 
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
-
-/*
-cd .\PionerV1\   
-npx hardhat run scripts/deploy.js --network sonic
-npx hardhat run scripts/_deploy.js --network ftmTestnet
-*/

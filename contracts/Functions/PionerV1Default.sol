@@ -85,7 +85,7 @@ contract PionerV1Default {
         utils.bOracle memory bO = pio.getBOracle(bC.oracleId);
         require(kyc.getKycType(msg.sender) != 6, "Default21a");
         require(bC.state == 2, "Default21b");
-        require( bO.lastPriceUpdateTime <= bO.maxDelay + block.timestamp, "Default22");
+        require( bO.lastPriceUpdateTime + bO.maxDelay >=  block.timestamp, "Default22");
         (uint256 uPnl, bool isNegative) = utils.calculateuPnl( bC.price, bO.lastPrice, bC.amount, bC.interestRate, bO.lastPriceUpdateTime, bC.isAPayingAPR );
         uint256 ir = utils.calculateIr(bC.interestRate, (block.timestamp - bO.lastPriceUpdateTime), bO.lastPrice, bC.amount);
         uint256 deltaImA = utils.dynamicIm( bC.price, bO.lastPrice, bC.amount, bO.imA, bO.dfA);
