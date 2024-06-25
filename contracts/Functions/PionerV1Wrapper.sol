@@ -105,7 +105,7 @@ contract PionerV1Wrapper is EIP712 {
         );
         open.openQuoteSigned(openQuoteSign, openQuoteSignature, signer, pio.getBOracleLength() - 1, msg.sender);
         open.acceptQuotewrapper(pio.getBContractLength() - 1, _acceptPrice, msg.sender);
-        emit acceptQuoteEvent(bOracleSign.signatureHashOpenQuote, pio.getBContractLength() - 1 );
+        emit acceptQuoteEvent(openQuoteSignature, pio.getBContractLength() - 1 );
 
     }
 

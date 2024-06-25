@@ -294,7 +294,8 @@ describe("PionerV1Wrappers Signatures Contract", function () {
 
     const _acceptPrice = ethers.parseUnits("50", 18);
 
-    await pionerV1Wrapper
+    // After the wrapperOpenQuoteMM call
+    const tx = await pionerV1Wrapper
       .connect(addr2)
       .wrapperOpenQuoteMM(
         bOracleSignValue,
@@ -303,6 +304,27 @@ describe("PionerV1Wrappers Signatures Contract", function () {
         openQuoteSignature,
         _acceptPrice
       );
+
+    // Wait for the transaction to be mined
+    const receipt = await tx.wait();
+
+    // Find the acceptQuoteEvent in the transaction logs
+    const acceptQuoteEvent = receipt.logs.find(
+      (log) => log.fragment && log.fragment.name === "acceptQuoteEvent"
+    );
+
+    if (acceptQuoteEvent) {
+      console.log("acceptQuoteEvent emitted:");
+      console.log("  openQuoteSignature:", acceptQuoteEvent.args[0]);
+      console.log("  bContractId:", acceptQuoteEvent.args[1].toString());
+    } else {
+      console.log("acceptQuoteEvent not found in transaction logs");
+    }
+
+    // Print the openQuoteSignValue (input for openQuoteSign)
+    console.log("openQuoteSign input:");
+    console.log(openQuoteSignature);
+    console.log(ethers.keccak256(openQuoteSignature));
 
     const bContractLength = await pionerV1.getBContractLength();
     const _bContractId = bContractLength - BigInt(1);
