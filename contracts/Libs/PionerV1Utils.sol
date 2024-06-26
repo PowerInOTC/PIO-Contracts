@@ -20,10 +20,6 @@ library PionerV1Utils {
         address nonce;
     }
 
-
-
-
-
     struct bContract { 
         address pA; 
         address pB; 

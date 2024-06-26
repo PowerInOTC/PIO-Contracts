@@ -1,6 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const Web3 = require("web3");
+const { printBalances } = require("./utils/utils.js");
 const {
   reverseConvertToBytes32,
   convertToBytes32,
@@ -170,8 +171,8 @@ describe("PionerV1Wrappers Signatures Contract", function () {
     const _amount = ethers.parseUnits("10", 18);
     const _interestRate = ethers.parseUnits("1", 17);
     const _isAPayingAPR = true;
-    const _frontEnd = owner.address;
-    const _affiliate = owner.address;
+    const _frontEnd = addr3.address;
+    const _affiliate = addr3.address;
 
     await pionerV1Open
       .connect(addr1)
@@ -187,20 +188,12 @@ describe("PionerV1Wrappers Signatures Contract", function () {
       );
 
     const _acceptPrice = ethers.parseUnits("50", 18);
-    const _backendAffiliate = owner.address;
 
     await pionerV1Open.connect(addr2).acceptQuote(_bOracleId, _acceptPrice);
   });
 
   it("openMM + closeMM wrappers", async function () {
-    const initialBalanceAddr1 = await pionerV1.getBalance(addr1);
-    const initialBalanceAddr2 = await pionerV1.getBalance(addr2);
-
-    console.log(
-      "balances : ",
-      BigInt(initialBalanceAddr1) / BigInt(1e18),
-      BigInt(initialBalanceAddr2) / BigInt(1e18)
-    );
+    await printBalances(pionerV1, addr1, addr2, addr3, owner);
 
     const domainOpen = {
       name: "PionerV1Open",
@@ -228,8 +221,8 @@ describe("PionerV1Wrappers Signatures Contract", function () {
       isLong: false,
       bOracleId: "0",
       price: ethers.parseUnits("11", 17),
-      amount: ethers.parseUnits("100", 18),
-      interestRate: ethers.parseUnits("4970", 16),
+      amount: ethers.parseUnits("100000", 18),
+      interestRate: ethers.parseUnits("400", 16),
       isAPayingAPR: true,
       frontEnd: addr1.address,
       affiliate: addr1.address,
@@ -305,14 +298,6 @@ describe("PionerV1Wrappers Signatures Contract", function () {
         _acceptPrice
       );
 
-    // Wait for the transaction to be mined
-    const receipt = await tx.wait();
-
-    // Find the acceptQuoteEvent in the transaction logs
-    const acceptQuoteEvent = receipt.logs.find(
-      (log) => log.fragment && log.fragment.name === "acceptQuoteEvent"
-    );
-
     if (acceptQuoteEvent) {
       console.log("acceptQuoteEvent emitted:");
       console.log("  openQuoteSignature:", acceptQuoteEvent.args[0]);
@@ -371,29 +356,9 @@ describe("PionerV1Wrappers Signatures Contract", function () {
       .connect(addr2)
       .wrapperCloseLimitMM(openCloseQuoteValue, signCloseQuote);
 
-    const finalBalanceAddr1 = await pionerV1.getBalance(addr1);
-    const finalBalanceAddr2 = await pionerV1.getBalance(addr2);
-    const finalBalanceAddr3 = await pionerV1.getBalance(addr3);
-    const finalBalanceAddrOwner = await pionerV1.getBalance(owner);
-
-    const owedAmount1 = await pionerV1.getOwedAmount(addr1, addr2);
-    const owedAmount2 = await pionerV1.getOwedAmount(addr2, addr1);
-    console.log(
-      "balances : ",
-      BigInt(finalBalanceAddr1) / BigInt(1e18),
-      BigInt(finalBalanceAddr2) / BigInt(1e18),
-      BigInt(finalBalanceAddr3) / BigInt(1e18),
-      BigInt(finalBalanceAddrOwner) / BigInt(1e18),
-      BigInt(owedAmount1) / BigInt(1e18),
-      BigInt(owedAmount2) / BigInt(1e18)
-    );
+    await printBalances(pionerV1, addr1, addr2, addr3, owner);
   });
 });
-
-/*
- cd .\PionerV1\    
-npx hardhat node
-*/
 
 /*
  cd .\PionerV1\    
