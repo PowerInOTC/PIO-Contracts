@@ -50,8 +50,18 @@ contract PionerV1Wrapper is EIP712 {
     function wrapperUpdatePriceAndDefault( utils.pionSign memory priceSignature,uint256 bContractId ) public {
                 utils.bContract memory bC = pio.getBContract(bContractId);
         oracle.updatePricePion(priceSignature, bC.oracleId);
-
         settle.settleAndLiquidate( bContractId);
+    }
+
+    function wrapperUpdatePriceAndDefault1( utils.pionSign memory priceSignature,uint256 bContractId ) public {
+                utils.bContract memory bC = pio.getBContract(bContractId);
+        oracle.updatePricePion(priceSignature, bC.oracleId);
+        settle.settleAndLiquidate1( bContractId);
+    }
+        function wrapperUpdatePriceAndDefault2( utils.pionSign memory priceSignature,uint256 bContractId ) public {
+                utils.bContract memory bC = pio.getBContract(bContractId);
+        oracle.updatePricePion(priceSignature, bC.oracleId);
+        settle.settleAndLiquidate2( bContractId);
     }
 
     function wrapperUpdatePriceAndCloseMarket( utils.pionSign memory priceSignature,uint256 bOracleId,uint256 bCloseQuoteId ) public {
@@ -109,44 +119,5 @@ contract PionerV1Wrapper is EIP712 {
 
     }
 
-/*
-        /// @dev This functino is used to push a signed accept quote in case accepting counterparty does not do it
-    function wrapperOpenQuoteAPI(
-        utils.bOracleSign calldata bOracleSign,
-        bytes calldata signaturebOracleSign,
-        utils.OpenQuoteSign calldata openQuoteSign,
-        bytes calldata openQuoteSignature,
-         utils.AcceptOpenQuoteSign calldata acceptQuoteSign, bytes calldata signHash) public {
 
-        require( keccak256(openQuoteSignature) == keccak256(bOracleSign.signatureHashOpenQuote), "Signature hash mismatch" );
-        bytes32 structHash = keccak256(abi.encode(
-            keccak256("bOracleSign(uint256 x,uint8 parity,uint256 maxConfidence,uint256 maxDelay,uint256 confidence, uint256 imA,uint256 imB,uint256 dfA,uint256 dfB,uint256 expiryA,uint256 expiryB,uint256 timeLock,bytes32 signatureHashOpenQuote,uint256 nonce)"),
-            bOracleSign.x,
-            bOracleSign.parity,
-            bOracleSign.maxConfidence,
-            bOracleSign.maxDelay,
-            bOracleSign.precision,
-            bOracleSign.imA,
-            bOracleSign.imB,
-            bOracleSign.dfA,
-            bOracleSign.dfB,
-            bOracleSign.expiryA,
-            bOracleSign.expiryB,
-            bOracleSign.timeLock,
-            bOracleSign.signatureHashOpenQuote,
-            bOracleSign.nonce
-        ));
-        bytes32 hash = _hashTypedDataV4(structHash);
-        address signer = ECDSA.recover(hash, signaturebOracleSign);
-
-        oracle.deployBOraclePion(
-            bOracleSign.x, bOracleSign.parity, bOracleSign.maxConfidence, bOracleSign.assetHex, bOracleSign.maxDelay, bOracleSign.precision, 
-            bOracleSign.imA, bOracleSign.imB, bOracleSign.dfA, bOracleSign.dfB, 
-            bOracleSign.expiryA, bOracleSign.expiryB, bOracleSign.timeLock, 1 
-        );
-
-        open.openQuoteSigned(openQuoteSign, openQuoteSignature, signer);
-        open.acceptQuoteSigned(acceptQuoteSign, signHash);
-    }
-    */
 }
