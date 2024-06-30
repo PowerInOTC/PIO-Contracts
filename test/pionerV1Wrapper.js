@@ -126,70 +126,6 @@ describe("PionerV1Wrappers Signatures Contract", function () {
       .deposit(ethers.parseUnits("10000", 18), 1, addr2);
     await fakeUSD.connect(addr3).mint(mintAmount);
     await fakeUSD.connect(addr3).approve(pionerV1Compliance.target, mintAmount);
-
-    _x = "0x20568a84796e6ade0446adfd2d8c4bba2c798c2af0e8375cc3b734f71b17f5fd";
-    _parity = 0;
-    _maxConfidence = ethers.parseUnits("1", 18);
-    _assetHex = convertToBytes32("forex.EURUSD/forex.GBPUSD");
-
-    _maxDelay = 60000;
-    _precision = 5;
-    _imA = ethers.parseUnits("10", 16);
-    _imB = ethers.parseUnits("10", 16);
-    _dfA = ethers.parseUnits("25", 15);
-    _dfB = ethers.parseUnits("25", 15);
-    _expiryA = 60;
-    _expiryB = 60;
-    _timeLock = 1440 * 30 * 3;
-    _cType = 1;
-
-    await pionerV1Oracle.deployBOraclePion(
-      _x,
-      _parity,
-      _maxConfidence,
-      _assetHex,
-      _maxDelay,
-      _precision,
-      _imA,
-      _imB,
-      _dfA,
-      _dfB,
-      _expiryA,
-      _expiryB,
-      _timeLock,
-      _cType
-    );
-
-    const oraclePrint = await pionerV1View.getOracle(0);
-    console.log("oraclePrint : ", oraclePrint);
-
-    const oracleLength = await pionerV1.getBOracleLength();
-
-    const _issLong = true;
-    const _bOracleId = oracleLength - BigInt(1);
-    const _price = ethers.parseUnits("50", 18);
-    const _amount = ethers.parseUnits("10", 18);
-    const _interestRate = ethers.parseUnits("1", 17);
-    const _isAPayingAPR = true;
-    const _frontEnd = addr3.address;
-    const _affiliate = addr3.address;
-
-    await pionerV1Open
-      .connect(addr1)
-      .openQuote(
-        _issLong,
-        _bOracleId,
-        _price,
-        _amount,
-        _interestRate,
-        _isAPayingAPR,
-        _frontEnd,
-        _affiliate
-      );
-
-    const _acceptPrice = ethers.parseUnits("50", 18);
-
-    await pionerV1Open.connect(addr2).acceptQuote(_bOracleId, _acceptPrice);
   });
 
   it("openMM + closeMM wrappers", async function () {
@@ -218,11 +154,11 @@ describe("PionerV1Wrappers Signatures Contract", function () {
     };
 
     const openQuoteSignValue = {
-      isLong: false,
+      isLong: true,
       bOracleId: "0",
       price: ethers.parseUnits("11", 17),
-      amount: ethers.parseUnits("100000", 18),
-      interestRate: ethers.parseUnits("400", 16),
+      amount: ethers.parseUnits("100", 18),
+      interestRate: ethers.parseUnits("4970", 16),
       isAPayingAPR: true,
       frontEnd: addr1.address,
       affiliate: addr1.address,
@@ -288,7 +224,7 @@ describe("PionerV1Wrappers Signatures Contract", function () {
     const _acceptPrice = ethers.parseUnits("50", 18);
 
     // After the wrapperOpenQuoteMM call
-    const tx = await pionerV1Wrapper
+    await pionerV1Wrapper
       .connect(addr2)
       .wrapperOpenQuoteMM(
         bOracleSignValue,
@@ -297,19 +233,6 @@ describe("PionerV1Wrappers Signatures Contract", function () {
         openQuoteSignature,
         _acceptPrice
       );
-
-    if (acceptQuoteEvent) {
-      console.log("acceptQuoteEvent emitted:");
-      console.log("  openQuoteSignature:", acceptQuoteEvent.args[0]);
-      console.log("  bContractId:", acceptQuoteEvent.args[1].toString());
-    } else {
-      console.log("acceptQuoteEvent not found in transaction logs");
-    }
-
-    // Print the openQuoteSignValue (input for openQuoteSign)
-    console.log("openQuoteSign input:");
-    console.log(openQuoteSignature);
-    console.log(ethers.keccak256(openQuoteSignature));
 
     const bContractLength = await pionerV1.getBContractLength();
     const _bContractId = bContractLength - BigInt(1);
@@ -340,7 +263,7 @@ describe("PionerV1Wrappers Signatures Contract", function () {
       bContractId: _bContractId,
       price: ethers.parseUnits("12", 17),
       amount: ethers.parseUnits("100", 18),
-      limitOrStop: ethers.parseUnits("12", 17),
+      limitOrStop: 0,
       expiry: "60000000000",
       authorized: addr2.address,
       nonce: 123,
@@ -357,6 +280,8 @@ describe("PionerV1Wrappers Signatures Contract", function () {
       .wrapperCloseLimitMM(openCloseQuoteValue, signCloseQuote);
 
     await printBalances(pionerV1, addr1, addr2, addr3, owner);
+    const contract = await pionerV1View.connect(addr1).getContract(0);
+    console.log("contract", contract);
   });
 });
 

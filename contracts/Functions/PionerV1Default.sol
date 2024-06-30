@@ -31,86 +31,56 @@ contract PionerV1Default {
         kyc = PionerV1Compliance(_pionerV1Compliance);
     }
 
-    function settleAndLiquidate1(uint256 bContractId) public{
+
+
+    function settleAndLiquidate(uint256 bContractId) public {
+        uint256 paid;bool liquidated;uint256 balance;
         utils.bContract memory bC = pio.getBContract(bContractId);
         utils.bOracle memory bO = pio.getBOracle(bC.oracleId);
-        console.log("bC.state", bC.oracleId);
-        console.log("bO.lastPriceUpdateTime", bO.lastPrice);  
-        console.log("bO.lastPriceUpdateTime", pio.getTotalShare());  
         require(kyc.getKycType(msg.sender) != 6, "Default21a");
         require(bC.state == 2, "Default21b");
         require(bO.lastPriceUpdateTime + bO.maxDelay >= block.timestamp, "Default22");
         
         (uint256 uPnl, bool isNegative) = utils.calculateuPnl(bC.price, bO.lastPrice, bC.amount, bC.interestRate, bC.openTime, bC.isAPayingAPR);
-            
-    }
-
-
-    function settleAndLiquidate2(uint256 bContractId) public{
-        utils.bContract memory bC = pio.getBContract(bContractId);
-        utils.bOracle memory bO = pio.getBOracle(bC.oracleId);
-        console.log("bC.state", bC.oracleId);
-        console.log("bO.lastPriceUpdateTime", bO.lastPrice);  
-        console.log("bO.lastPriceUpdateTime", pio.getTotalShare());  
-        require(kyc.getKycType(msg.sender) != 6, "Default21a");
-        require(bC.state == 2, "Default21b");
-        require(bO.lastPriceUpdateTime + bO.maxDelay >= block.timestamp, "Default22");
-        
-        (uint256 uPnl, bool isNegative) = utils.calculateuPnl(bC.price, bO.lastPrice, bC.amount, bC.interestRate, bC.openTime, bC.isAPayingAPR);
-        
-        uint256 deltaImA = utils.dynamicIm(bC.price, bO.lastPrice, bC.amount, bO.imA, bO.dfA);
-       
-    }
-
-
-    
-
-
-
-    
-    function settleAndLiquidate(uint256 bContractId) public{
-        utils.bContract memory bC = pio.getBContract(bContractId);
-        utils.bOracle memory bO = pio.getBOracle(bC.oracleId);
-        console.log("bC.state", bC.oracleId);
-        console.log("bO.lastPriceUpdateTime", bO.lastPrice);  
-        console.log("bO.lastPriceUpdateTime", pio.getTotalShare());  
-        require(kyc.getKycType(msg.sender) != 6, "Default21a");
-        require(bC.state == 2, "Default21b");
-        require(bO.lastPriceUpdateTime + bO.maxDelay >= block.timestamp, "Default22");
-        
-        (uint256 uPnl, bool isNegative) = utils.calculateuPnl(bC.price, bO.lastPrice, bC.amount, bC.interestRate, bC.openTime, bC.isAPayingAPR);
-        
+        // loser is the one paying sponsor since trade haven't been settled on his side
+        uPnl += pio.paySponsor(msg.sender, bC.pA, bC.price, bO.lastPrice, bO.imA);
         uint256 deltaImA = utils.dynamicIm(bC.price, bO.lastPrice, bC.amount, bO.imA, bO.dfA);
         uint256 deltaImB = utils.dynamicIm(bC.price, bO.lastPrice, bC.amount, bO.imB, bO.dfB); 
-        
         require(bC.price * bC.amount >= 1e18, "Default:UnderflowCheck2");
         uint256 notional = bC.price * bC.amount / 1e18;
+
         
-        uint256 paid;
-        bool liquidated;
-            
-        if (isNegative) { // deltaIm down
+        if (isNegative) { // deltaIm down      
+            balance = pio.getBalance(bC.pA);
             if (uPnl > deltaImA) {
-                require(uPnl >= deltaImA, "Default:UnderflowCheck3");
-                paid = pio.setBalance(uPnl - deltaImA, bC.pA, bC.pB, false, false);
-                if (paid != uPnl - deltaImA) { liquidated = true; }
+                balance = pio.getBalance(bC.pA);
+                if (balance < uPnl - deltaImA) {
+                    paid = pio.setBalance(uPnl, bC.pA, bC.pB, false, false);
+                    liquidated = true;
+                }
+                else if ( balance > uPnl - deltaImA) {
+                    paid = pio.setBalance(uPnl - deltaImA, bC.pA, bC.pB, false, false);
+                    if (paid != uPnl - deltaImA) { liquidated = true; }
+                 } else {
+                    paid = pio.setBalance(balance, bC.pA, bC.pB, false, false);
+                    if (paid != uPnl - deltaImA) { liquidated = true; }
+                 }
             } else {
-                require(deltaImA >= uPnl, "Default:UnderflowCheck4");
                 paid = pio.setBalance(deltaImA - uPnl, bC.pA, address(0), true, false);
             }
             if (liquidated) { // liquidate
-                paid += bO.imA * notional / 1e18;
-                if (paid > uPnl) {
-                    require(paid >= uPnl, "Default:UnderflowCheck5");
-                    pio.addBalance(bC.pA, paid - uPnl);
+                // distribute defaulter df
+                pio.payLiquidationShare(bO.dfA * notional /1e18, bC.pB);
+                uint256 availableFunds = paid + (bO.imA * notional / 1e18);
+                if (availableFunds >= uPnl) {
+                    uint256 toBParty = uPnl + (bO.dfB + bO.imB ) * notional / 1e18 ;
+                    pio.setBalance(toBParty, bC.pB, address(0), true, false);
+                    pio.addBalance(bC.pA, availableFunds - uPnl);
                 } else {
-                    require(uPnl >= paid, "Default:UnderflowCheck6");
-                    pio.addToOwed(uPnl - paid, bC.pA, bC.pB);
+                    uint256 toBParty = availableFunds +  (bO.dfB + bO.imB ) * notional / 1e18 ;
+                    pio.setBalance(toBParty, bC.pB, address(0), true, false);
+                    pio.addToOwed(uPnl - availableFunds, bC.pA, bC.pB);
                 }
-                require(1e18 >= pio.getTotalShare(), "Default:UnderflowCheck7");
-                uint256 liquidationAmount = paid + (bO.dfB + bO.imB + (bO.dfA * (1e18 - pio.getTotalShare())) / 1e18) * notional / 1e18;
-                pio.setBalance(liquidationAmount, bC.pB, address(0), true, false);
-                pio.payLiquidationShare((bO.dfA * notional / 1e18) * pio.getTotalShare());
                 bC.initiator = bC.pA;
                 bC.state = 4;
                 bC.cancelTime = block.timestamp;
@@ -119,117 +89,53 @@ contract PionerV1Default {
                 pio.decreaseOpenPositionNumber(bC.pA);
                 emit liquidatedEvent(bContractId);
             } else { // settle
-                pio.payLiquidationShare((bO.dfA * notional / 1e18) * pio.getTotalShare());
                 pio.setBalance(uPnl + deltaImB, bC.pB, address(0), true, false);
-                pio.paySponsor(msg.sender, bC.pA, bC.price, bO.lastPrice, bO.imA, false);
                 bC.price = bO.lastPrice;
                 bC.openTime = bO.lastPriceUpdateTime;
                 emit settledEvent(bContractId);
             }
         } else { // deltaIm up
-            paid = pio.setBalance(uPnl + deltaImB, bC.pB, bC.pA, false, false);
-            if (paid != uPnl + deltaImB) { // liquidate
-                if (paid > uPnl) {
-                    require(paid >= uPnl, "Default:UnderflowCheck8");
-                    paid += (bO.imB * notional / 1e18) + paid - uPnl;
+            balance = pio.getBalance(bC.pB);
+            if (balance < uPnl + deltaImB) {
+                paid = pio.setBalance(uPnl, bC.pB, bC.pA, false, false);
+                liquidated = true;
+            }
+            else {
+                paid = pio.setBalance(uPnl + deltaImB, bC.pB, bC.pA, false, false);
+            } 
+            if (liquidated) { // liquidate
+                // distribute defaulter df
+                pio.payLiquidationShare(bO.dfB * notional /1e18, bC.pA);
+                uint256 availableFunds = paid + (bO.imB * notional / 1e18);
+                if (availableFunds >= uPnl) {
+                    uint256 toAParty = uPnl + (bO.dfA + bO.imA ) * notional / 1e18 ;
+                    pio.setBalance(toAParty, bC.pA, address(0), true, false);
+                    pio.addBalance(bC.pB, availableFunds - uPnl);
                 } else {
-                    paid += bO.imB * notional / 1e18;
+                    uint256 toAParty = availableFunds +  (bO.dfB + bO.imB ) * notional / 1e18 ;
+                    pio.setBalance(toAParty, bC.pA, address(0), true, false);
+                    pio.addToOwed(uPnl - availableFunds, bC.pB, bC.pA);
                 }
-                if (paid > uPnl) {
-                    require(paid >= uPnl, "Default:UnderflowCheck9");
-                    pio.addBalance(bC.pB, paid - uPnl);
-                } else {
-                    require(uPnl >= paid, "Default:UnderflowCheck10");
-                    pio.addToOwed(uPnl - paid, bC.pB, bC.pA);
-                }
-                require(1e18 >= pio.getTotalShare(), "Default:UnderflowCheck11");
-                uint256 liquidationAmount = paid + (bO.dfA + bO.imA + (bO.dfB * (1e18 - pio.getTotalShare())) / 1e18) * notional / 1e18;
-                pio.setBalance(liquidationAmount, bC.pA, address(0), true, false);
-                pio.payLiquidationShare((bO.dfA * notional / 1e18) * pio.getTotalShare());
 
                 bC.initiator = bC.pB;
                 bC.state = 4;
                 bC.cancelTime = block.timestamp;
                 bC.price = bO.lastPrice;
-                pio.decreaseOpenPositionNumber(bC.pA);
                 pio.decreaseOpenPositionNumber(bC.pB);
+                pio.decreaseOpenPositionNumber(bC.pA);
                 emit liquidatedEvent(bContractId);
             } else { // settle
-                pio.payLiquidationShare((bO.dfA * notional / 1e18) * pio.getTotalShare());
                 require(uPnl >= deltaImA, "Default:UnderflowCheck12");
                 pio.setBalance(uPnl - deltaImA, bC.pA, address(0), true, false);
-                pio.paySponsor(msg.sender, bC.pB, bC.price, bO.lastPrice, bO.imB, false);
                 bC.price = bO.lastPrice;
                 bC.openTime = bO.lastPriceUpdateTime;
                 emit settledEvent(bContractId);
             }
         }
         pio.updateCumIm(bO, bC, bContractId);
+        pio.setBContract(bContractId, bC);
+
     }
 
-    event BContractValues(
-    uint256 bContractId,
-    uint256 oracleId,
-    uint256 price,
-    uint256 amount,
-    uint256 interestRate,
-    bool isAPayingAPR,
-    address pA,
-    address pB,
-    uint256 state,
-    uint256 openTime
-);
-
-event BOracleValues(
-    uint256 oracleId,
-    uint256 lastPrice,
-    uint256 lastPriceUpdateTime,
-    uint256 maxDelay,
-    uint256 imA,
-    uint256 imB,
-    uint256 dfA,
-    uint256 dfB
-);
-
-event AdditionalValues(
-    uint256 currentTimestamp,
-    uint256 totalShare
-);
-
-function emitAllValues(uint256 bContractId) public {
-    utils.bContract memory bC = pio.getBContract(bContractId);
-    utils.bOracle memory bO = pio.getBOracle(bC.oracleId);
-
-    // Emit bContract values
-    emit BContractValues(
-        bContractId,
-        bC.oracleId,
-        bC.price,
-        bC.amount,
-        bC.interestRate,
-        bC.isAPayingAPR,
-        bC.pA,
-        bC.pB,
-        bC.state,
-        bC.openTime
-    );
-
-    // Emit bOracle values
-    emit BOracleValues(
-        bC.oracleId,
-        bO.lastPrice,
-        bO.lastPriceUpdateTime,
-        bO.maxDelay,
-        bO.imA,
-        bO.imB,
-        bO.dfA,
-        bO.dfB
-    );
-
-    // Emit additional values
-    emit AdditionalValues(
-        block.timestamp,
-        pio.getTotalShare()
-    );
-}
+  
 }

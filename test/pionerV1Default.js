@@ -157,9 +157,9 @@ describe("PionerV1Default", function () {
     const openQuoteSignValue = {
       isLong: false,
       bOracleId: "0",
-      price: ethers.parseUnits("11", 17),
-      amount: ethers.parseUnits("100", 18),
-      interestRate: ethers.parseUnits("4970", 16),
+      price: ethers.parseUnits("1", 18),
+      amount: ethers.parseUnits("20", 18),
+      interestRate: ethers.parseUnits("1", 16),
       isAPayingAPR: true,
       frontEnd: addr1.address,
       affiliate: addr1.address,
@@ -222,7 +222,7 @@ describe("PionerV1Default", function () {
       bOracleSignValue
     );
 
-    const _acceptPrice = ethers.parseUnits("50", 18);
+    const _acceptPrice = ethers.parseUnits("1", 18);
 
     // After the wrapperOpenQuoteMM call
     await pionerV1Wrapper
@@ -252,8 +252,8 @@ describe("PionerV1Default", function () {
       reqId:
         "0x522d370b6bf8694319f89582909be8639c73bae0ea880d602227520b69392bdf",
       requestassetHex: convertToBytes32("forex.EURUSD/forex.USDCHF"),
-      requestPairBid: "1001184488331682891000",
-      requestPairAsk: "1001184641973002008600",
+      requestPairBid: ethers.parseUnits("10000", 18),
+      requestPairAsk: ethers.parseUnits("10000", 18),
       requestConfidence: "5",
       requestSignTime: block.timestamp,
       requestPrecision: "5",
@@ -263,11 +263,30 @@ describe("PionerV1Default", function () {
       nonce: "0xB069130Ef5ee44a82E3A670cD2b6b5cEB75b3B1A",
     };
 
+    // Add an event listener for the settlementEvent
+    const settlementEventPromise = new Promise((resolve) => {
+      pionerV1Wrapper.once("settlementEvent", (bContractId) => {
+        resolve(bContractId);
+      });
+    });
+
+    // Call the wrapperUpdatePriceAndDefault function
     const tx = await pionerV1Wrapper
       .connect(addr1)
       .wrapperUpdatePriceAndDefault(priceSignature, bOracleLength - BigInt(1));
 
+    // Wait for the transaction to be mined
+    await tx.wait();
+
+    // Get the emitted bContractId from the event
+    const emittedBContractId = await settlementEventPromise;
+
+    // Check if the emitted bContractId matches the expected value
+    expect(emittedBContractId).to.equal(_bContractId);
+
     await printBalances(pionerV1, addr1, addr2, addr3, owner);
+
+    const contract = await pionerV1View.connect(addr1).getContract(0);
   });
 });
 

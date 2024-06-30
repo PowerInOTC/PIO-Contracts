@@ -142,8 +142,10 @@ contract PionerV1Open  is EIP712  {
         utils.bOracle memory bO = pio.getBOracle(bOracleId);
 
         require( pio.getOpenPositionNumber(target) <= pio.getMaxOpenPositions(), "Open11" ); 
-        require(amount * price / 1e18 >= pio.getMinNotional(), "Open12");
         require(kyc.kycCheck(target , address(0)), "Open12b");
+        // Variable IM doesn't allow > 1
+        require( bO.imA + bO.dfA <= 1e18 , "Open13" );
+        require( bO.imB + bO.dfB <= 1e18 , "Open14" );
 
         bC.initiator = target;
         bC.price = price;
@@ -154,14 +156,16 @@ contract PionerV1Open  is EIP712  {
         bC.state = 1;
         bC.frontEnd = frontEnd;
         bC.affiliate = affiliate;
-        
+
         if(isLong){
             pio.setBalance( (bO.imA + bO.dfA) * amount / 1e18 * price / 1e18, target, address(0), false, true);
             bC.pA = target;
+
         }
         else{
             pio.setBalance( (bO.imB + bO.dfB) * amount / 1e18 * price / 1e18 , target, address(0), false, true);
             bC.pB = target;
+
         }   
 
         emit openQuoteEvent( pio.getBContractLength());

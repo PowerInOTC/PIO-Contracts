@@ -210,6 +210,7 @@ contract PionerV1Close is EIP712 {
           closePosition(bC, bO, bContractId, uPnl, isNegative, bC.amount, bidAsk);
       }
       pio.updateCumIm(bO, bC, bContractId);
+
       emit expirateBContractEvent(bContractId);
   }    
 
@@ -229,6 +230,7 @@ contract PionerV1Close is EIP712 {
           closePosition(bC, bO, bContractId, uPnl, isNegative, bC.amount, bO.lastPrice);
       }
       pio.updateCumIm(bO, bC, bContractId);
+
       emit expirateBContractEvent(bContractId);
   }    
 
@@ -267,12 +269,14 @@ contract PionerV1Close is EIP712 {
           } 
       }
       bC.amount -= amount;
+
       if( bC.amount == 0){
           bC.state = 3;
           pio.decreaseOpenPositionNumber(bC.pA);
           pio.decreaseOpenPositionNumber(bC.pB);
       }
       pio.setBContract(bContractId, bC);
+      
     }
 
     // delete and repush to modify a inner order
@@ -282,6 +286,7 @@ contract PionerV1Close is EIP712 {
         _bCloseQuote.state = 4;
             _bCloseQuote.cancelTime = block.timestamp;
         pio.setBCloseQuote(bCloseQuoteId, _bCloseQuote);
+
         emit cancelOpenCloseQuoteContractEvent(bCloseQuoteId);
     }
 

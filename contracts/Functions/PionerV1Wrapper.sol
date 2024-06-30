@@ -29,6 +29,7 @@ contract PionerV1Wrapper is EIP712 {
 
     event acceptQuoteEvent(bytes indexed signatureHashOpenQuote, uint256 indexed bContractId);
     event acceptCloseQuoteEvent(bytes indexed signatureHashCloseQuote, uint256 indexed bContractId);
+    event settlementEvent(uint256 indexed bContractId);
 
 
     constructor (
@@ -48,20 +49,10 @@ contract PionerV1Wrapper is EIP712 {
     }
 
     function wrapperUpdatePriceAndDefault( utils.pionSign memory priceSignature,uint256 bContractId ) public {
-                utils.bContract memory bC = pio.getBContract(bContractId);
+        utils.bContract memory bC = pio.getBContract(bContractId);
+        emit settlementEvent(bContractId);
         oracle.updatePricePion(priceSignature, bC.oracleId);
         settle.settleAndLiquidate( bContractId);
-    }
-
-    function wrapperUpdatePriceAndDefault1( utils.pionSign memory priceSignature,uint256 bContractId ) public {
-                utils.bContract memory bC = pio.getBContract(bContractId);
-        oracle.updatePricePion(priceSignature, bC.oracleId);
-        settle.settleAndLiquidate1( bContractId);
-    }
-        function wrapperUpdatePriceAndDefault2( utils.pionSign memory priceSignature,uint256 bContractId ) public {
-                utils.bContract memory bC = pio.getBContract(bContractId);
-        oracle.updatePricePion(priceSignature, bC.oracleId);
-        settle.settleAndLiquidate2( bContractId);
     }
 
     function wrapperUpdatePriceAndCloseMarket( utils.pionSign memory priceSignature,uint256 bOracleId,uint256 bCloseQuoteId ) public {
@@ -70,9 +61,9 @@ contract PionerV1Wrapper is EIP712 {
     }
 
     function wrapperCloseLimitMM( utils.OpenCloseQuoteSign calldata quote, bytes calldata signHash ) public {
+        emit  acceptCloseQuoteEvent(signHash, quote.bContractId);
         close.openCloseQuoteSigned( quote, signHash, msg.sender ); 
         close.acceptCloseQuotewrapper(pio.getBCloseQuoteLength() - 1, quote.amount, msg.sender );
-       emit  acceptCloseQuoteEvent(signHash, quote.bContractId);
     }
     
 

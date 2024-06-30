@@ -174,8 +174,12 @@ library PionerV1Utils {
     }
 
     function calculateuPnl(uint256 price, uint256 lastPrice, uint256 amount, uint256 interestRate, uint256 lastPriceUpdateTime, bool isPayingIr) public view returns (uint256, bool) {
-        require(lastPriceUpdateTime >= block.timestamp, "PionerV1Utils: calculateuPnl: lastPriceUpdateTime > block.timestamp");
-        uint256 ir = calculateIr(interestRate, (lastPriceUpdateTime - block.timestamp), lastPrice, amount);
+        uint256 ir;
+        if ( lastPriceUpdateTime <= block.timestamp ){
+            ir = calculateIr(interestRate, (block.timestamp - lastPriceUpdateTime ), lastPrice, amount);
+        } else {
+             ir = calculateIr(interestRate, (lastPriceUpdateTime - block.timestamp ), lastPrice, amount);
+        }
 
         uint256 pnl;
         if (lastPrice >= price) {

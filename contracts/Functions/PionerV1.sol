@@ -233,10 +233,6 @@ contract PionerV1 is MuonClientBase  {
         return minimumOpenPartialFillNotional[user];
     }
 
-    function getSponsorReward(address user) external view returns (uint256) {
-        return sponsorReward[user];
-    }
-
     function getCumImBalances(address user) external view returns (uint256) {
         return cumImBalances[user];
     }
@@ -435,7 +431,6 @@ contract PionerV1 is MuonClientBase  {
     }
 
 
-
     /// @return uint256 paid ammount due to not enough balance
     function setBalance(uint256 amount, address target, address receiver, bool sign, bool revertMode) external onlyContracts returns(uint256) {
         if (sign){
@@ -537,8 +532,9 @@ contract PionerV1 is MuonClientBase  {
         balances[PIONER_DAO] += amount;
     }
 
-    function payLiquidationShare(uint256 amount) public{
-        balances[PIONER_DAO] += amount;
+    function payLiquidationShare(uint256 amount, address winner) public{
+        balances[PIONER_DAO] += amount * HEDGER_SHARE / 1e18;
+        balances[winner] += amount * (1e18 - HEDGER_SHARE) / 1e18;
     }
 
     // update cum Im for stable default management
@@ -568,20 +564,36 @@ contract PionerV1 is MuonClientBase  {
         sponsorReward[msg.sender] = newAmount;
     }
 
-    function paySponsor(address receiver,address target, uint256 price, uint256 lastPrice, uint256 im, bool isA) external onlyContracts{
+
+    function getSponsorReward(address user) external view returns (uint256) {
+        return sponsorReward[user];
+    }
+
+    /**
+     * @notice only pay sponsor if imA > or < 80% compared to upnl
+     * @return amount unpaid
+     */
+    function paySponsor(address receiver, address target, uint256 price, uint256 lastPrice, uint256 im) external onlyContracts returns(uint256) {
+        uint256 sponsorReward = sponsorReward[receiver];
         if(receiver ==  target){
+        } else if(lastPrice > price && (lastPrice / price /1e18) <=  im * 8e17 / 1e18){
+            if (balances[receiver] <= sponsorReward){
+                return balances[receiver];
+            } else {
+                balances[receiver] += sponsorReward;
+                balances[target] -= sponsorReward;
+                return 0;
+            }
+        } else if (price > lastPrice && (price / lastPrice /1e18) <=  im * 8e17 / 1e18){
+            if (balances[receiver] <= sponsorReward){
+                return balances[receiver];
+            } else {
+                balances[receiver] += sponsorReward;
+                balances[target] -= sponsorReward;
+                return 0;
+            }
         }
-        else if(isA && (lastPrice / price /1e18) <=  im * 8e17 / 1e18){
-            if(balances[target] >= sponsorReward[target]){
-                balances[receiver] += sponsorReward[target];
-                balances[target] -= sponsorReward[target];
-            }   
-        } else if (!isA && (price / lastPrice /1e18) <=  im * 8e17 / 1e18){
-            if(balances[target] >= sponsorReward[target]){
-                balances[receiver] += sponsorReward[target];
-                balances[target] -= sponsorReward[target];
-            }   
-        }
+        return 0;
     }
 
     //Deploy
